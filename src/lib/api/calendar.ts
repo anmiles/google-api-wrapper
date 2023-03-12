@@ -16,12 +16,12 @@ async function getAPI(profile: string): Promise<GoogleApis.calendar_v3.Calendar>
 	});
 }
 
-async function getCalendars(profile: string, args: GoogleApis.calendar_v3.Params$Resource$Calendarlist$List) {
+async function getCalendars(profile: string, args: GoogleApis.calendar_v3.Params$Resource$Calendarlist$List): Promise<GoogleApis.calendar_v3.Schema$CalendarList[]> {
 	const api = await calendar.getAPI(profile);
 	return getItems(api.calendarList, args);
 }
 
-async function getEvents(profile: string, args: GoogleApis.calendar_v3.Params$Resource$Events$List) {
+async function getEvents(profile: string, args: GoogleApis.calendar_v3.Params$Resource$Events$List): Promise<GoogleApis.calendar_v3.Schema$Events[]> {
 	const api = await calendar.getAPI(profile);
 	return getItems(api.events, args);
 }

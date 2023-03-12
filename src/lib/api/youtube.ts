@@ -16,7 +16,7 @@ async function getAPI(profile: string): Promise<GoogleApis.youtube_v3.Youtube> {
 	});
 }
 
-async function getPlaylistItems(profile: string, args: GoogleApis.youtube_v3.Params$Resource$Playlistitems$List) {
+async function getPlaylistItems(profile: string, args: GoogleApis.youtube_v3.Params$Resource$Playlistitems$List): Promise<GoogleApis.youtube_v3.Schema$PlaylistItem[]> {
 	const api = await youtube.getAPI(profile);
 	return getItems(api.playlistItems, args);
 }
