@@ -16,7 +16,7 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 jest.mock('googleapis', () => ({
 	google : {
 		calendar : jest.fn().mockImplementation(() => ({ events : eventsAPI })),
-		youtube  : jest.fn().mockImplementation(() => ({ playlistItems : videosAPI})),
+		youtube  : jest.fn().mockImplementation(() => ({ playlistItems : videosAPI })),
 	},
 }));
 

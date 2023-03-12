@@ -8,14 +8,28 @@ Provides quick interface for getting google API data
 
 ``` bash
 > $ npm install @anmiles/google-api-wrapper
-> $ node ./login.js
+> $ node ./auth.js
+> $ node ./videos.js
 ```
 
 ``` js
-/* login.js */
+/* auth.js */
 
-import { login } from '@anmiles/google-api-wrapper';
+import { createProfile, login } from '@anmiles/google-api-wrapper';
 
+createProfile("username");
 login("username");
+
+```
+
+``` js
+/* videos.js */
+
+import { getProfiles, getVideos } from '@anmiles/google-api-wrapper';
+
+getProfiles().map(async (profile) => {
+	const videos = await getVideos(profile, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
+	videos.forEach((video) => console.log(`Downloaded: ${video.snippet?.title}`));
+});
 
 ```
