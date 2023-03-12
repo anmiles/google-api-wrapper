@@ -7,11 +7,11 @@ import apiHelpers from './apiHelpers';
 
 const original = jest.requireActual('../youtube').default as typeof youtube;
 jest.mock<Partial<typeof youtube>>('../youtube', () => ({
-	getAPI : jest.fn().mockImplementation(async () => ({ playlistItems : api })),
+	getAPI : jest.fn().mockImplementation(async () => ({ playlistItems : playlistItemsAPI })),
 }));
 
 jest.mock<Partial<typeof shared>>('../shared', () => ({
-	getItems : jest.fn().mockImplementation(async () => playlistItems),
+	getItems : jest.fn(),
 }));
 
 jest.mock<Partial<typeof fs>>('fs', () => ({
@@ -20,13 +20,15 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 
 jest.mock('googleapis', () => ({
 	google : {
-		youtube : jest.fn().mockImplementation(() => ({ playlistItems : api })),
+		youtube : jest.fn().mockImplementation(() => ({ playlistItems : playlistItemsAPI })),
 	},
 }));
 
 jest.mock<Partial<typeof auth>>('../../auth', () => ({
 	getAuth : jest.fn().mockImplementation(() => googleAuth),
 }));
+
+const getItemsSpy = jest.spyOn(shared, 'getItems');
 
 const profile = 'username';
 
@@ -53,8 +55,7 @@ const pageTokens = [
 	'token2',
 ];
 
-const api  = apiHelpers.getAPI(playlistItemsResponse, pageTokens);
-const args = { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 };
+const playlistItemsAPI = apiHelpers.getAPI(playlistItemsResponse, pageTokens);
 
 describe('src/lib/api/youtube', () => {
 	describe('getAPI', () => {
@@ -73,11 +74,17 @@ describe('src/lib/api/youtube', () => {
 		it('should return youtube api', async () => {
 			const result = await original.getAPI(profile);
 
-			expect(result).toEqual({ playlistItems : api });
+			expect(result).toEqual({ playlistItems : playlistItemsAPI });
 		});
 	});
 
 	describe('getPlaylistItems', () => {
+		const args = { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 };
+
+		beforeEach(() => {
+			getItemsSpy.mockResolvedValue(playlistItems);
+		});
+
 		it('should get api', async () => {
 			await original.getPlaylistItems(profile, args);
 
@@ -87,7 +94,7 @@ describe('src/lib/api/youtube', () => {
 		it('should call getItems', async () => {
 			await original.getPlaylistItems(profile, args);
 
-			expect(shared.getItems).toBeCalledWith(api, args);
+			expect(getItemsSpy).toBeCalledWith(playlistItemsAPI, args);
 		});
 
 		it('should return videos', async () => {

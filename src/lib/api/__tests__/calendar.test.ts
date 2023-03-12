@@ -7,11 +7,11 @@ import apiHelpers from './apiHelpers';
 
 const original = jest.requireActual('../calendar').default as typeof calendar;
 jest.mock<Partial<typeof calendar>>('../calendar', () => ({
-	getAPI : jest.fn().mockImplementation(async () => ({ events : api })),
+	getAPI : jest.fn().mockImplementation(async () => ({ calendarList : calendarsAPI, events : eventsAPI })),
 }));
 
 jest.mock<Partial<typeof shared>>('../shared', () => ({
-	getItems : jest.fn().mockImplementation(async () => events),
+	getItems : jest.fn(),
 }));
 
 jest.mock<Partial<typeof fs>>('fs', () => ({
@@ -20,7 +20,7 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 
 jest.mock('googleapis', () => ({
 	google : {
-		calendar : jest.fn().mockImplementation(() => ({ events : api })),
+		calendar : jest.fn().mockImplementation(() => ({ calendarList : calendarsAPI, events : eventsAPI })),
 	},
 }));
 
@@ -28,11 +28,26 @@ jest.mock<Partial<typeof auth>>('../../auth', () => ({
 	getAuth : jest.fn().mockImplementation(() => googleAuth),
 }));
 
+const getItemsSpy = jest.spyOn(shared, 'getItems');
+
 const profile = 'username';
 
 const googleAuth = {
 	setCredentials : jest.fn(),
 };
+
+const calendars: Array<{ summary?: string, description?: string, hidden?: boolean }> = [
+	{ summary : 'calendar 1', description : 'calendar 1 description', hidden : false },
+	{ summary : 'calendar 2', description : 'calendar 2 description', hidden : undefined },
+	{ summary : 'calendar 3', description : undefined, hidden : true },
+	{ summary : 'calendar 4', description : undefined, hidden : undefined },
+];
+
+const calendarsResponse = [
+	[ calendars[0], calendars[1] ],
+	null,
+	[ calendars[2], calendars[3] ],
+];
 
 const events: Array<{ summary?: string, source?: { url?: string, title?: string} }> = [
 	{ summary : 'event 1', source : { title : 'source 1', url : 'https://example.com' } },
@@ -53,8 +68,8 @@ const pageTokens = [
 	'token2',
 ];
 
-const api  = apiHelpers.getAPI(eventsResponse, pageTokens);
-const args = { timeMin : '2010-01-01T00:00:00', timeMax : '2019-12-31T23:59:59' };
+const calendarsAPI = apiHelpers.getAPI(calendarsResponse, pageTokens);
+const eventsAPI    = apiHelpers.getAPI(eventsResponse, pageTokens);
 
 describe('src/lib/api/calendar', () => {
 	describe('getAPI', () => {
@@ -73,11 +88,43 @@ describe('src/lib/api/calendar', () => {
 		it('should return calendar api', async () => {
 			const result = await original.getAPI(profile);
 
-			expect(result).toEqual({ events : api });
+			expect(result).toEqual({ calendarList : calendarsAPI, events : eventsAPI });
+		});
+	});
+
+	describe('getCalendars', () => {
+		const args = { showHidden : true };
+
+		beforeEach(() => {
+			getItemsSpy.mockResolvedValue(calendars);
+		});
+
+		it('should get api', async () => {
+			await original.getCalendars(profile, args);
+
+			expect(calendar.getAPI).toBeCalledWith(profile);
+		});
+
+		it('should get items', async () => {
+			await original.getCalendars(profile, args);
+
+			expect(getItemsSpy).toBeCalledWith(calendarsAPI, args);
+		});
+
+		it('should return calendars', async () => {
+			const result = await original.getCalendars(profile, args);
+
+			expect(result).toEqual(calendars);
 		});
 	});
 
 	describe('getEvents', () => {
+		const args = { timeMin : '2010-01-01T00:00:00', timeMax : '2019-12-31T23:59:59' };
+
+		beforeEach(() => {
+			getItemsSpy.mockResolvedValue(events);
+		});
+
 		it('should get api', async () => {
 			await original.getEvents(profile, args);
 
@@ -87,7 +134,7 @@ describe('src/lib/api/calendar', () => {
 		it('should get items', async () => {
 			await original.getEvents(profile, args);
 
-			expect(shared.getItems).toBeCalledWith(api, args);
+			expect(getItemsSpy).toBeCalledWith(eventsAPI, args);
 		});
 
 		it('should return events', async () => {
@@ -98,19 +145,19 @@ describe('src/lib/api/calendar', () => {
 	});
 
 	describe('setEvent', () => {
-		const eventId    = 'eventId';
-		const updateArgs = { requestBody : { summary : 'summary' } };
+		const eventId = 'eventId';
+		const args    = { requestBody : { summary : 'summary' } };
 
 		it('should get api', async () => {
-			await original.setEvent(profile, eventId, updateArgs);
+			await original.setEvent(profile, eventId, args);
 
 			expect(calendar.getAPI).toBeCalledWith(profile);
 		});
 
 		it('should set items', async () => {
-			await original.setEvent(profile, eventId, updateArgs);
+			await original.setEvent(profile, eventId, args);
 
-			expect(api.update).toBeCalledWith({ eventId, ...updateArgs });
+			expect(eventsAPI.update).toBeCalledWith({ eventId, ...args });
 		});
 	});
 });
