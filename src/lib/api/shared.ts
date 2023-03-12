@@ -1,12 +1,9 @@
-import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
-import { getAuth } from './auth';
-import data from './data';
-import { log } from './logger';
-import { sleep } from './sleep';
+import { log } from '../logger';
+import { sleep } from '../sleep';
 
-export { getEvents, getVideos };
-export default { getData, getEvents, getVideos };
+export { getItems };
+export default { getItems };
 
 type CommonApi<TArgs, TResponse> = {
 	list: (
@@ -25,7 +22,7 @@ type CommonResponse<TItem> = {
 
 const requestInterval = 300;
 
-async function getData<
+async function getItems<
 	TApi extends CommonApi<TArgs, TResponse>,
 	TItem,
 	TArgs,
@@ -40,31 +37,8 @@ async function getData<
 		response.data.items?.forEach((item) => items.push(item));
 		log(`Getting items (${items.length} of ${response.data.pageInfo?.totalResults || 'many'})...`);
 		pageToken = response.data.nextPageToken;
-
 		await sleep(requestInterval);
 	} while (pageToken);
 
 	return items;
-}
-
-async function getEvents(profile: string, args: GoogleApis.calendar_v3.Params$Resource$Events$List): Promise<GoogleApis.calendar_v3.Schema$Event[]> {
-	const googleAuth = await getAuth(profile);
-
-	const { events } = google.calendar({
-		version : 'v3',
-		auth    : googleAuth,
-	});
-
-	return data.getData(events, args);
-}
-
-async function getVideos(profile: string, args: GoogleApis.youtube_v3.Params$Resource$Playlistitems$List): Promise<GoogleApis.youtube_v3.Schema$PlaylistItem[]> {
-	const googleAuth = await getAuth(profile);
-
-	const { playlistItems } = google.youtube({
-		version : 'v3',
-		auth    : googleAuth,
-	});
-
-	return data.getData(playlistItems, args);
 }

@@ -25,10 +25,10 @@ login("username");
 ``` js
 /* videos.js */
 
-import { getProfiles, getVideos } from '@anmiles/google-api-wrapper';
+import { getProfiles, youtube } from '@anmiles/google-api-wrapper';
 
 getProfiles().map(async (profile) => {
-	const videos = await getVideos(profile, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
+	const videos = await youtube.getPlaylistItems(profile, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
 	videos.forEach((video) => console.log(`Downloaded: ${video.snippet?.title}`));
 });
 
