@@ -1,0 +1,50 @@
+{
+  "name": "@anmiles/google-api-wrapper",
+  "version": "0.0.1",
+  "description": "Provides quick interface for getting google API data",
+  "keywords": [
+    "google",
+    "api",
+    "auth"
+  ],
+  "author": "Anatoliy Oblaukhov",
+  "homepage": "https://gitlab.com/anmiles/google-api-wrapper",
+  "repository": "gitlab:anmiles/google-api-wrapper",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.14.2"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "lint": "eslint --ext .js,.ts .",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "jest --verbose",
+    "test:coverage": "npm test -- --coverage",
+    "test:ci": "npm test -- --ci --coverage",
+    "test:watch": "npm test -- --watch",
+    "test:watch:coverage": "npm test -- --watch --coverage",
+    "test:report:coverage": "nyc report --nycrc-path ./coverage.config.js -t ./coverage --report-dir ./coverage",
+    "create": "node ./dist/create.js",
+    "login": "node ./dist/login.js"
+  },
+  "dependencies": {
+    "colorette": "^2.0.19",
+    "execa": "^5.1.1",
+    "googleapis": "^104.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^28.1.3",
+    "@typescript-eslint/eslint-plugin": "^5.30.0",
+    "@typescript-eslint/parser": "^5.30.0",
+    "eslint": "^8.18.0",
+    "eslint-plugin-align-assignments": "^1.1.2",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jest": "^26.5.3",
+    "jest": "^28.1.2",
+    "nyc": "^15.1.0",
+    "rimraf": "^3.0.2",
+    "ts-jest": "^28.0.5",
+    "typescript": "^4.7.4"
+  }
+}
