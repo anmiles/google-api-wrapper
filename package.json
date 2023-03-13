@@ -1,6 +1,6 @@
 {
   "name": "@anmiles/google-api-wrapper",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "Provides quick interface for getting google API data",
   "keywords": [
     "google",
