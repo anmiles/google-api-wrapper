@@ -27,7 +27,7 @@ async function getItems<
 	TItem,
 	TArgs,
 	TResponse extends CommonResponse<TItem>
->(api: TApi, args: TArgs): Promise<TItem[]> {
+>(api: TApi, args: TArgs, showProgress: boolean = false): Promise<TItem[]> {
 	const items: TItem[] = [];
 
 	let pageToken: string | null | undefined = undefined;
@@ -35,7 +35,11 @@ async function getItems<
 	do {
 		const response: GoogleApis.Common.GaxiosResponse<TResponse> = await api.list({ ...args, pageToken });
 		response.data.items?.forEach((item) => items.push(item));
-		log(`Getting items (${items.length} of ${response.data.pageInfo?.totalResults || 'many'})...`);
+
+		if (showProgress) {
+			log(`Getting items (${items.length} of ${response.data.pageInfo?.totalResults || 'many'})...`);
+		}
+
 		pageToken = response.data.nextPageToken;
 		await sleep(requestInterval);
 	} while (pageToken);
