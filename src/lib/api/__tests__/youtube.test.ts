@@ -36,11 +36,11 @@ const googleAuth = {
 	setCredentials : jest.fn(),
 };
 
-const playlistItems: Array<{ snippet?: { title?: string, resourceId?: { videoId?: string } } }> = [
-	{ snippet : { title : 'video1', resourceId : { videoId : 'video1Id' } } },
-	{ snippet : { title : 'video2', resourceId : { videoId : undefined } } },
-	{ snippet : { title : undefined, resourceId : undefined } },
-	{ snippet : undefined },
+const playlistItems: Array<{ id?: string | null | undefined, snippet?: { title?: string, resourceId?: { videoId?: string } } }> = [
+	{ id : 'id1', snippet : { title : 'video1', resourceId : { videoId : 'video1Id' } } },
+	{ id : null, snippet : { title : 'video2', resourceId : { videoId : undefined } } },
+	{ id : 'id3', snippet : { title : undefined, resourceId : undefined } },
+	{ id : 'id4', snippet : undefined },
 ];
 
 const playlistItemsResponse = [

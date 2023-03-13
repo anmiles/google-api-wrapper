@@ -36,11 +36,11 @@ const googleAuth = {
 	setCredentials : jest.fn(),
 };
 
-const calendars: Array<{ summary?: string, description?: string, hidden?: boolean }> = [
-	{ summary : 'calendar 1', description : 'calendar 1 description', hidden : false },
-	{ summary : 'calendar 2', description : 'calendar 2 description', hidden : undefined },
-	{ summary : 'calendar 3', description : undefined, hidden : true },
-	{ summary : 'calendar 4', description : undefined, hidden : undefined },
+const calendars: Array<{ id?: string | null | undefined, summary?: string, description?: string, hidden?: boolean }> = [
+	{ id : 'id1', summary : 'calendar 1', description : 'calendar 1 description', hidden : false },
+	{ id : 'id2', summary : 'calendar 2', description : 'calendar 2 description', hidden : undefined },
+	{ id : null, summary : 'calendar 3', description : undefined, hidden : true },
+	{ id : 'id4', summary : 'calendar 4', description : undefined, hidden : undefined },
 ];
 
 const calendarsResponse = [
@@ -49,11 +49,11 @@ const calendarsResponse = [
 	[ calendars[2], calendars[3] ],
 ];
 
-const events: Array<{ summary?: string, source?: { url?: string, title?: string} }> = [
-	{ summary : 'event 1', source : { title : 'source 1', url : 'https://example.com' } },
-	{ summary : 'event 2', source : { title : 'source 2', url : undefined } },
-	{ summary : 'event 3', source : { title : undefined, url : undefined } },
-	{ summary : 'event 4', source : undefined },
+const events: Array<{ id?: string | null | undefined, summary?: string, source?: { url?: string, title?: string} }> = [
+	{ id : 'id1', summary : 'event 1', source : { title : 'source 1', url : 'https://example.com' } },
+	{ id : null, summary : 'event 2', source : { title : 'source 2', url : undefined } },
+	{ id : 'id3', summary : 'event 3', source : { title : undefined, url : undefined } },
+	{ id : 'id4', summary : 'event 4', source : undefined },
 ];
 
 const eventsResponse = [
