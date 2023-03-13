@@ -26,8 +26,7 @@
     "test:watch:coverage": "npm test -- --watch --coverage",
     "test:report:coverage": "nyc report --nycrc-path ./coverage.config.js -t ./coverage --report-dir ./coverage",
     "create": "node ./dist/create.js",
-    "login": "node ./dist/login.js",
-    "save": "npm run build && npm publish --access public"
+    "login": "node ./dist/login.js"
   },
   "dependencies": {
     "colorette": "^2.0.19",
