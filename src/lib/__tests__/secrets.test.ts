@@ -66,13 +66,13 @@ const scopesJSON: string[] = [
 const secretsJSON: Secrets = {
 	web : {
 		/* eslint-disable camelcase */
-		client_id               				: 'client_id.apps.googleusercontent.com',
-		project_id            				  : 'project_id',
-		auth_uri               					: 'https://accounts.google.com/o/oauth2/auth',
-		token_uri               				: 'https://oauth2.googleapis.com/token',
+		client_id                   : 'client_id.apps.googleusercontent.com',
+		project_id                  : 'project_id',
+		auth_uri                    : 'https://accounts.google.com/o/oauth2/auth',
+		token_uri                   : 'https://oauth2.googleapis.com/token',
 		auth_provider_x509_cert_url : 'https://www.googleapis.com/oauth2/v1/certs',
-		client_secret            			: 'client_secret',
-		redirect_uris            			: [ 'http://localhost:6006/oauthcallback' ],
+		client_secret               : 'client_secret',
+		redirect_uris               : [ 'http://localhost:6006/oauthcallback' ],
 		/* eslint-enable camelcase */
 	},
 };

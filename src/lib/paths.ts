@@ -31,7 +31,7 @@ function getProfilesFile() {
 }
 
 function getScopesFile() {
-	return path.join(dirPaths.input, 'scopes.json');
+	return 'scopes.json';
 }
 
 function getSecretsFile(profile: string) {
