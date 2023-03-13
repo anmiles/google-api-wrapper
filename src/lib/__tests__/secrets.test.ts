@@ -9,11 +9,13 @@ import type { Secrets } from '../../types';
 import secrets from '../secrets';
 const original = jest.requireActual('../secrets').default as typeof secrets;
 jest.mock<typeof secrets>('../secrets', () => ({
-	getSecrets        : jest.fn(),
-	getCredentials    : jest.fn(),
+	getScopes		 : jest.fn().mockImplementation(() => scopesJSON),
+	getSecrets		: jest.fn().mockImplementation(() => secretsJSON),
+	getCredentials	: jest.fn(),
 	createCredentials : jest.fn(),
-	checkSecrets      : jest.fn(),
-	getSecretsError   : jest.fn().mockImplementation(() => secretsError),
+	checkSecrets	  : jest.fn(),
+	getScopesError	: jest.fn().mockImplementation(() => scopesError),
+	getSecretsError: jest.fn().mockImplementation(() => secretsError),
 }));
 
 jest.mock<Partial<typeof http>>('http', () => ({
@@ -36,7 +38,7 @@ jest.mock<Partial<typeof colorette>>('colorette', () => ({
 }));
 
 jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
-	getJSON      : jest.fn().mockImplementation(() => json),
+	getJSON	  : jest.fn().mockImplementation(() => json),
 	getJSONAsync : jest.fn().mockImplementation(async () => json),
 }));
 
@@ -47,23 +49,30 @@ jest.mock<Partial<typeof logger>>('../logger', () => ({
 	}) as jest.Mock<never, any>,
 }));
 
-const profile          = 'username1';
-const secretsFile      = 'secrets/username1.json';
+const profile		  = 'username1';
+const scopesFile	= 'input/scopes.json';
+const secretsFile	  = 'secrets/username1.json';
 const credentialsFile  = 'secrets/username1.credentials.json';
 const wrongRedirectURI = 'wrong_redirect_uri';
 
+const scopesError  = 'scopesError';
 const secretsError = 'secretsError';
+
+const scopesJSON: string[] = [
+	'https://www.googleapis.com/auth/calendar.calendars.readonly',
+	'https://www.googleapis.com/auth/calendar.events.readonly',
+];
 
 const secretsJSON: Secrets = {
 	web : {
 		/* eslint-disable camelcase */
-		client_id                   : 'client_id.apps.googleusercontent.com',
-		project_id                  : 'project_id',
-		auth_uri                    : 'https://accounts.google.com/o/oauth2/auth',
-		token_uri                   : 'https://oauth2.googleapis.com/token',
+		client_id				: 'client_id.apps.googleusercontent.com',
+		project_id				  : 'project_id',
+		auth_uri					: 'https://accounts.google.com/o/oauth2/auth',
+		token_uri				: 'https://oauth2.googleapis.com/token',
 		auth_provider_x509_cert_url : 'https://www.googleapis.com/oauth2/v1/certs',
-		client_secret               : 'client_secret',
-		redirect_uris               : [ 'http://localhost:6006/oauthcallback' ],
+		client_secret			: 'client_secret',
+		redirect_uris			: [ 'http://localhost:6006/oauthcallback' ],
 		/* eslint-enable camelcase */
 	},
 };
@@ -74,11 +83,11 @@ const credentialsJSON = {
 
 let json: object;
 
-const code    = 'code';
+const code	= 'code';
 const authUrl = 'https://authUrl';
-const auth    = {
+const auth	= {
 	generateAuthUrl : jest.fn().mockReturnValue(authUrl),
-	getToken        : jest.fn().mockReturnValue({ tokens : credentialsJSON }),
+	getToken		: jest.fn().mockReturnValue({ tokens : credentialsJSON }),
 } as unknown as GoogleApis.Common.OAuth2Client;
 
 let request: http.IncomingMessage;
@@ -100,6 +109,33 @@ const close  = jest.fn().mockImplementation(() => {
 });
 
 describe('src/lib/secrets', () => {
+	describe('getScopes', () => {
+		const getJSONSpy = jest.spyOn(jsonLib, 'getJSON');
+
+		beforeEach(() => {
+			json = scopesJSON;
+		});
+
+		it('should get json from scopes file', async () => {
+			await original.getScopes();
+
+			expect(getJSONSpy).toBeCalled();
+			expect(getJSONSpy.mock.calls[0][0]).toEqual(scopesFile);
+		});
+
+		it('should fallback to error', async () => {
+			await original.getScopes();
+
+			expect(getJSONSpy.mock.calls[0][1]).toThrowError(scopesError);
+		});
+
+		it('should return scopes', async () => {
+			const result = await original.getScopes();
+
+			expect(result).toEqual(scopesJSON);
+		});
+	});
+
 	describe('getSecrets', () => {
 		const getJSONSpy = jest.spyOn(jsonLib, 'getJSON');
 
@@ -172,7 +208,7 @@ describe('src/lib/secrets', () => {
 
 		beforeEach(() => {
 			request = {
-				url     : `/request.url?code=${code}`,
+				url	 : `/request.url?code=${code}`,
 				headers : {
 					host : 'localhost:6006',
 				},
@@ -187,7 +223,10 @@ describe('src/lib/secrets', () => {
 			expect(auth.generateAuthUrl).toBeCalledWith({
 				// eslint-disable-next-line camelcase
 				access_type : 'offline',
-				scope       : [ 'https://www.googleapis.com/auth/youtube.readonly' ],
+				scope	: [
+					'https://www.googleapis.com/auth/calendar.calendars.readonly',
+					'https://www.googleapis.com/auth/calendar.events.readonly',
+				],
 			});
 		});
 
@@ -205,7 +244,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:https://www.googleapis.com/auth/youtube.readonly`);
+			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events.readonly`);
 		});
 
 		it('should ask to close webpage', async () => {
@@ -213,7 +252,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith('<h1>Please close this page and return to application</h1>');
+			expect(response.end).toBeCalledWith('<h1>Please close this page and return to application. Wait for application to be finished automatically.</h1>');
 		});
 
 		it('should close server if request.url is truthy', async () => {
@@ -226,9 +265,9 @@ describe('src/lib/secrets', () => {
 
 		it('should only resolve when request.url is truthy', async () => {
 			const emptyRequestTime = 100;
-			const requestTime      = 200;
-			const emptyRequest     = { ...request } as http.IncomingMessage;
-			emptyRequest.url       = undefined;
+			const requestTime	  = 200;
+			const emptyRequest	 = { ...request } as http.IncomingMessage;
+			emptyRequest.url	= undefined;
 
 			const before = new Date().getTime();
 			willOpen(emptyRequest, emptyRequestTime);
@@ -245,9 +284,9 @@ describe('src/lib/secrets', () => {
 
 		it('should only resolve when request.url contains no code', async () => {
 			const noCodeRequestTime = 100;
-			const requestTime       = 200;
-			const noCodeRequest     = { ...request } as http.IncomingMessage;
-			noCodeRequest.url       = '/request.url?param=value';
+			const requestTime	= 200;
+			const noCodeRequest	 = { ...request } as http.IncomingMessage;
+			noCodeRequest.url	= '/request.url?param=value';
 
 			const before = new Date().getTime();
 			willOpen(noCodeRequest, noCodeRequestTime);
@@ -279,11 +318,19 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should output error if redirect_uri is incorrect', () => {
-			const wrongSecretsJSON                = { ...secretsJSON };
+			const wrongSecretsJSON				= { ...secretsJSON };
 			wrongSecretsJSON.web.redirect_uris[0] = wrongRedirectURI;
-			const func                            = () => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
+			const func							= () => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
 
 			expect(func).toThrowError('Error in credentials file: redirect URI should be http://localhost:6006/oauthcallback.\nsecretsError');
+		});
+	});
+
+	describe('getScopesError', () => {
+		it('should return error message with instructions', () => {
+			const result = original.getScopesError(scopesFile);
+			expect(result).toEqual(`File ${scopesFile} not found!\n\
+This application had to have pre-defined file ${scopesFile} that will declare needed scopes`);
 		});
 	});
 
@@ -291,13 +338,36 @@ describe('src/lib/secrets', () => {
 		it('should return error message with instructions', () => {
 			const result = original.getSecretsError(profile, secretsFile);
 			expect(result).toEqual(`File ${secretsFile} not found!\n\
-To obtain it, please create correct OAuth client ID:\n\
-\tGo to https://console.cloud.google.com/apis/credentials/oauthclient\n\
-\t[if applicable] Click "+ Create credentials" and choose "OAuth client ID\n\
-\tSet application type "Web application"\n\
-\tAdd authorized redirect URI: http://localhost:6006/oauthcallback\n\
-\tClick "Create"\n\
-\tClick "Download JSON" and download credentials to ./secrets/${profile}.json\n\
+Here is how to obtain it:\n\
+	Go to https://console.cloud.google.com/projectcreate\n\
+		Choose project name\n\
+		Click "CREATE" and wait for project to become created\n\
+	Go to https://console.cloud.google.com/apis/dashboard\n\
+		Select just created project in the top left dropdown list\n\
+		Click "ENABLE APIS AND SERVICES"\n\
+			Click API you need\n\
+			Click "ENABLE" and wait for API to become enabled\n\
+		Click "Credentials" tab on the left sidebar\n\
+			Click "CONFIGURE CONSENT SCREEN" on the right\n\
+				Choose "External"\n\
+				Click "CREATE"\n\
+				Choose app name, i.e. "NodeJS"\n\
+				Specify your email as user support email and as developer contact information on the very bottom\n\
+				Click "Save and continue"\n\
+			Click "Add or remove scopes"\n\
+				Add scopes: https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events.readonly\n\
+				Click "Save and continue"\n\
+			Click "Add users"\n\
+				Add your email\n\
+				Click "Save and continue"\n\
+			Click "Back to dashboard" on the very bottom\n\
+		Click "Credentials" on the left sidebar\n\
+			Click "CREATE CREDENTIALS" and choose "OAuth client ID"\n\
+				Select application type "Web application"\n\
+				Specify app name, i.e. "NodeJS"\n\
+				Add authorized redirect URI: http://localhost:6006/oauthcallback\n\
+				Click "CREATE"\n\
+				Click "DOWNLOAD JSON" and download credentials to ./secrets/${profile}.json\n\
 Then start this script again`);
 		});
 	});

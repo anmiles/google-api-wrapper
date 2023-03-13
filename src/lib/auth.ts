@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
+import { info, warn } from './logger';
 import { getProfiles } from './profiles';
 import { getCredentials, getSecrets } from './secrets';
 
@@ -12,12 +13,14 @@ async function login(profile?: string): Promise<void> {
 	const profiles = getProfiles().filter((p) => !profile || p === profile);
 
 	for (const profile of profiles) {
+		warn(`${profile} - logging in...`);
 		await auth.getAuth(profile);
+		info(`${profile} - logged in successfully`);
 	}
 }
 
 async function getAuth(profile: string): Promise<GoogleApis.Common.OAuth2Client> {
-	const secrets = await getSecrets(profile);
+	const secrets = getSecrets(profile);
 
 	const googleAuth = new google.auth.OAuth2(
 		secrets.web.client_id,

@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import paths from './paths';
 
-export { ensureDir, ensureFile, getProfilesFile, getSecretsFile, getCredentialsFile };
-export default { ensureDir, ensureFile, getProfilesFile, getSecretsFile, getCredentialsFile };
+export { ensureDir, ensureFile, getProfilesFile, getScopesFile, getSecretsFile, getCredentialsFile };
+export default { ensureDir, ensureFile, getProfilesFile, getScopesFile, getSecretsFile, getCredentialsFile };
 
 const dirPaths = {
 	input   : 'input',
@@ -28,6 +28,10 @@ function ensureFile(filePath: string) {
 
 function getProfilesFile() {
 	return path.join(dirPaths.input, 'profiles.json');
+}
+
+function getScopesFile() {
+	return path.join(dirPaths.input, 'scopes.json');
 }
 
 function getSecretsFile(profile: string) {

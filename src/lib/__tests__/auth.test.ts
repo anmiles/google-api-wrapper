@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
+import logger from '../logger';
 import profiles from '../profiles';
 import secrets from '../secrets';
 
@@ -10,12 +11,17 @@ jest.mock<typeof auth>('../auth', () => ({
 	getAuth : jest.fn().mockImplementation(async () => googleAuth),
 }));
 
+jest.mock<Partial<typeof logger>>('../logger', () => ({
+	info : jest.fn(),
+	warn : jest.fn(),
+}));
+
 jest.mock<Partial<typeof profiles>>('../profiles', () => ({
 	getProfiles : jest.fn().mockImplementation(() => allProfiles),
 }));
 
 jest.mock<Partial<typeof secrets>>('../secrets', () => ({
-	getSecrets     : jest.fn().mockImplementation(async () => secretsObject),
+	getSecrets     : jest.fn().mockImplementation(() => secretsObject),
 	getCredentials : jest.fn().mockImplementation(async () => credentials),
 }));
 
@@ -58,6 +64,15 @@ describe('src/lib/auth', () => {
 			allProfiles.forEach((profile) => {
 				expect(auth.getAuth).toBeCalledWith(profile);
 			});
+		});
+
+		it('should show auth progress for all profiles', async () => {
+			await original.login();
+
+			expect(logger.warn).toBeCalledWith('username1 - logging in...');
+			expect(logger.warn).toBeCalledWith('username2 - logging in...');
+			expect(logger.info).toBeCalledWith('username1 - logged in successfully');
+			expect(logger.info).toBeCalledWith('username2 - logged in successfully');
 		});
 
 		it('should auth only specified profile', async () => {

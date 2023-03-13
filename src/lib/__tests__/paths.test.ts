@@ -7,6 +7,7 @@ jest.mock<typeof paths>('../paths', () => ({
 	ensureDir          : jest.fn().mockImplementation((dirPath) => dirPath),
 	ensureFile         : jest.fn().mockImplementation((filePath) => filePath),
 	getProfilesFile    : jest.fn().mockImplementation(() => profilesFile),
+	getScopesFile      : jest.fn().mockImplementation(() => scopesFile),
 	getSecretsFile     : jest.fn().mockImplementation(() => secretsFile),
 	getCredentialsFile : jest.fn().mockImplementation(() => credentialsFile),
 }));
@@ -27,6 +28,7 @@ const dirPath  = 'dirPath';
 const filePath = 'parentDir/filePath';
 
 const profilesFile    = 'input/profiles.json';
+const scopesFile      = 'input/scopes.json';
 const secretsFile     = 'secrets/username.json';
 const credentialsFile = 'secrets/username.credentials.json';
 
@@ -95,6 +97,14 @@ describe('src/lib/paths', () => {
 			const result = original.getProfilesFile();
 
 			expect(result).toEqual(profilesFile);
+		});
+	});
+
+	describe('getScopesFile', () => {
+		it('should return scopes file', () => {
+			const result = original.getScopesFile();
+
+			expect(result).toEqual(scopesFile);
 		});
 	});
 
