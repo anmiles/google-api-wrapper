@@ -9,13 +9,13 @@ import type { Secrets } from '../../types';
 import secrets from '../secrets';
 const original = jest.requireActual('../secrets').default as typeof secrets;
 jest.mock<typeof secrets>('../secrets', () => ({
-	getScopes		 : jest.fn().mockImplementation(() => scopesJSON),
-	getSecrets		: jest.fn().mockImplementation(() => secretsJSON),
-	getCredentials	: jest.fn(),
+	getScopes      		 : jest.fn().mockImplementation(() => scopesJSON),
+	getSecrets      		: jest.fn().mockImplementation(() => secretsJSON),
+	getCredentials   	: jest.fn(),
 	createCredentials : jest.fn(),
-	checkSecrets	  : jest.fn(),
-	getScopesError	: jest.fn().mockImplementation(() => scopesError),
-	getSecretsError: jest.fn().mockImplementation(() => secretsError),
+	checkSecrets   	  : jest.fn(),
+	getScopesError   	: jest.fn().mockImplementation(() => scopesError),
+	getSecretsError   : jest.fn().mockImplementation(() => secretsError),
 }));
 
 jest.mock<Partial<typeof http>>('http', () => ({
@@ -38,7 +38,7 @@ jest.mock<Partial<typeof colorette>>('colorette', () => ({
 }));
 
 jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
-	getJSON	  : jest.fn().mockImplementation(() => json),
+	getJSON   	  : jest.fn().mockImplementation(() => json),
 	getJSONAsync : jest.fn().mockImplementation(async () => json),
 }));
 
@@ -49,9 +49,9 @@ jest.mock<Partial<typeof logger>>('../logger', () => ({
 	}) as jest.Mock<never, any>,
 }));
 
-const profile		  = 'username1';
-const scopesFile	= 'input/scopes.json';
-const secretsFile	  = 'secrets/username1.json';
+const profile          = 'username1';
+const scopesFile       = 'scopes.json';
+const secretsFile      = 'secrets/username1.json';
 const credentialsFile  = 'secrets/username1.credentials.json';
 const wrongRedirectURI = 'wrong_redirect_uri';
 
@@ -66,13 +66,13 @@ const scopesJSON: string[] = [
 const secretsJSON: Secrets = {
 	web : {
 		/* eslint-disable camelcase */
-		client_id				: 'client_id.apps.googleusercontent.com',
-		project_id				  : 'project_id',
-		auth_uri					: 'https://accounts.google.com/o/oauth2/auth',
-		token_uri				: 'https://oauth2.googleapis.com/token',
+		client_id               				: 'client_id.apps.googleusercontent.com',
+		project_id            				  : 'project_id',
+		auth_uri               					: 'https://accounts.google.com/o/oauth2/auth',
+		token_uri               				: 'https://oauth2.googleapis.com/token',
 		auth_provider_x509_cert_url : 'https://www.googleapis.com/oauth2/v1/certs',
-		client_secret			: 'client_secret',
-		redirect_uris			: [ 'http://localhost:6006/oauthcallback' ],
+		client_secret            			: 'client_secret',
+		redirect_uris            			: [ 'http://localhost:6006/oauthcallback' ],
 		/* eslint-enable camelcase */
 	},
 };
@@ -83,11 +83,11 @@ const credentialsJSON = {
 
 let json: object;
 
-const code	= 'code';
+const code    = 'code';
 const authUrl = 'https://authUrl';
-const auth	= {
+const auth    = {
 	generateAuthUrl : jest.fn().mockReturnValue(authUrl),
-	getToken		: jest.fn().mockReturnValue({ tokens : credentialsJSON }),
+	getToken      		: jest.fn().mockReturnValue({ tokens : credentialsJSON }),
 } as unknown as GoogleApis.Common.OAuth2Client;
 
 let request: http.IncomingMessage;
@@ -208,7 +208,7 @@ describe('src/lib/secrets', () => {
 
 		beforeEach(() => {
 			request = {
-				url	 : `/request.url?code=${code}`,
+				url   	 : `/request.url?code=${code}`,
 				headers : {
 					host : 'localhost:6006',
 				},
@@ -223,7 +223,7 @@ describe('src/lib/secrets', () => {
 			expect(auth.generateAuthUrl).toBeCalledWith({
 				// eslint-disable-next-line camelcase
 				access_type : 'offline',
-				scope	: [
+				scope      	: [
 					'https://www.googleapis.com/auth/calendar.calendars.readonly',
 					'https://www.googleapis.com/auth/calendar.events.readonly',
 				],
@@ -265,9 +265,9 @@ describe('src/lib/secrets', () => {
 
 		it('should only resolve when request.url is truthy', async () => {
 			const emptyRequestTime = 100;
-			const requestTime	  = 200;
-			const emptyRequest	 = { ...request } as http.IncomingMessage;
-			emptyRequest.url	= undefined;
+			const requestTime      = 200;
+			const emptyRequest     = { ...request } as http.IncomingMessage;
+			emptyRequest.url       = undefined;
 
 			const before = new Date().getTime();
 			willOpen(emptyRequest, emptyRequestTime);
@@ -284,9 +284,9 @@ describe('src/lib/secrets', () => {
 
 		it('should only resolve when request.url contains no code', async () => {
 			const noCodeRequestTime = 100;
-			const requestTime	= 200;
-			const noCodeRequest	 = { ...request } as http.IncomingMessage;
-			noCodeRequest.url	= '/request.url?param=value';
+			const requestTime       = 200;
+			const noCodeRequest     = { ...request } as http.IncomingMessage;
+			noCodeRequest.url       = '/request.url?param=value';
 
 			const before = new Date().getTime();
 			willOpen(noCodeRequest, noCodeRequestTime);
@@ -318,9 +318,9 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should output error if redirect_uri is incorrect', () => {
-			const wrongSecretsJSON				= { ...secretsJSON };
+			const wrongSecretsJSON                = { ...secretsJSON };
 			wrongSecretsJSON.web.redirect_uris[0] = wrongRedirectURI;
-			const func							= () => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
+			const func                            = () => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
 
 			expect(func).toThrowError('Error in credentials file: redirect URI should be http://localhost:6006/oauthcallback.\nsecretsError');
 		});

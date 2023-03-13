@@ -28,7 +28,7 @@ const dirPath  = 'dirPath';
 const filePath = 'parentDir/filePath';
 
 const profilesFile    = 'input/profiles.json';
-const scopesFile      = 'input/scopes.json';
+const scopesFile      = 'scopes.json';
 const secretsFile     = 'secrets/username.json';
 const credentialsFile = 'secrets/username.credentials.json';
 
