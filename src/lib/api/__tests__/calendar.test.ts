@@ -30,7 +30,8 @@ jest.mock<Partial<typeof auth>>('../../auth', () => ({
 
 const getItemsSpy = jest.spyOn(shared, 'getItems');
 
-const profile = 'username';
+const profile         = 'username';
+const getItemsOptions = { showProgress : true };
 
 const googleAuth = {
 	setCredentials : jest.fn(),
@@ -100,19 +101,19 @@ describe('src/lib/api/calendar', () => {
 		});
 
 		it('should get api', async () => {
-			await original.getCalendars(profile, args);
+			await original.getCalendars(profile, args, getItemsOptions);
 
 			expect(calendar.getAPI).toBeCalledWith(profile);
 		});
 
 		it('should get items', async () => {
-			await original.getCalendars(profile, args);
+			await original.getCalendars(profile, args, getItemsOptions);
 
-			expect(getItemsSpy).toBeCalledWith(calendarsAPI, args);
+			expect(getItemsSpy).toBeCalledWith(calendarsAPI, args, getItemsOptions);
 		});
 
 		it('should return calendars', async () => {
-			const result = await original.getCalendars(profile, args);
+			const result = await original.getCalendars(profile, args, getItemsOptions);
 
 			expect(result).toEqual(calendars);
 		});
@@ -126,19 +127,19 @@ describe('src/lib/api/calendar', () => {
 		});
 
 		it('should get api', async () => {
-			await original.getEvents(profile, args);
+			await original.getEvents(profile, args, getItemsOptions);
 
 			expect(calendar.getAPI).toBeCalledWith(profile);
 		});
 
 		it('should get items', async () => {
-			await original.getEvents(profile, args);
+			await original.getEvents(profile, args, getItemsOptions);
 
-			expect(getItemsSpy).toBeCalledWith(eventsAPI, args);
+			expect(getItemsSpy).toBeCalledWith(eventsAPI, args, getItemsOptions);
 		});
 
 		it('should return events', async () => {
-			const result = await original.getEvents(profile, args);
+			const result = await original.getEvents(profile, args, getItemsOptions);
 
 			expect(result).toEqual(events);
 		});

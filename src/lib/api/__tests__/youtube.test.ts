@@ -30,7 +30,8 @@ jest.mock<Partial<typeof auth>>('../../auth', () => ({
 
 const getItemsSpy = jest.spyOn(shared, 'getItems');
 
-const profile = 'username';
+const profile         = 'username';
+const getItemsOptions = { showProgress : true };
 
 const googleAuth = {
 	setCredentials : jest.fn(),
@@ -86,19 +87,19 @@ describe('src/lib/api/youtube', () => {
 		});
 
 		it('should get api', async () => {
-			await original.getPlaylistItems(profile, args);
+			await original.getPlaylistItems(profile, args, getItemsOptions);
 
 			expect(youtube.getAPI).toBeCalledWith(profile);
 		});
 
 		it('should call getItems', async () => {
-			await original.getPlaylistItems(profile, args);
+			await original.getPlaylistItems(profile, args, getItemsOptions);
 
-			expect(getItemsSpy).toBeCalledWith(playlistItemsAPI, args);
+			expect(getItemsSpy).toBeCalledWith(playlistItemsAPI, args, getItemsOptions);
 		});
 
 		it('should return videos', async () => {
-			const result = await original.getPlaylistItems(profile, args);
+			const result = await original.getPlaylistItems(profile, args, getItemsOptions);
 
 			expect(result).toEqual(playlistItems);
 		});

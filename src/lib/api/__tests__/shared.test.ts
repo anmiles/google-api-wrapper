@@ -49,7 +49,7 @@ describe('src/lib/api/shared', () => {
 		});
 
 		it('should output progress if requested', async () => {
-			await original.getItems(api, args, true);
+			await original.getItems(api, args, { showProgress : true });
 
 			expect(logger.log).toBeCalledTimes(response.length);
 			expect(logger.log).toBeCalledWith('Getting items (2 of 4)...');
