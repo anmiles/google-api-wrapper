@@ -9,12 +9,10 @@ export default { getItems };
 const requestInterval = 300;
 
 type CommonApi<TItem> = {
-	list: (
-		params?: { pageToken: string | undefined },
-		options?: GoogleApis.Common.MethodOptions
-	) => Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>
-} & {
-	list: (callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void) => void
+	list: {
+		(params?: { pageToken: string | undefined }, options?: GoogleApis.Common.MethodOptions): Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
+		(callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void): void;
+	}
 };
 
 type CommonResponse<TItem> = {
