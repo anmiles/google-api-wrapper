@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
-import type { AuthOptions } from '../types';
+import type { CommonOptions, AuthOptions } from '../types';
 import { info, warn } from './logger';
 import { getProfiles } from './profiles';
 import { getCredentials, getSecrets } from './secrets';
@@ -10,13 +10,19 @@ import auth from './auth';
 export { login, getAuth };
 export default { login, getAuth };
 
-async function login(profile?: string): Promise<void> {
+async function login(profile?: string, options?: CommonOptions & AuthOptions): Promise<void> {
 	const profiles = getProfiles().filter((p) => !profile || p === profile);
 
 	for (const profile of profiles) {
-		warn(`${profile} - logging in...`);
-		await auth.getAuth(profile, { persist : true });
-		info(`${profile} - logged in successfully`);
+		if (!options?.hideProgress) {
+			warn(`${profile} - logging in...`);
+		}
+
+		await auth.getAuth(profile, options);
+
+		if (!options?.hideProgress) {
+			info(`${profile} - logged in successfully`);
+		}
 	}
 }
 
@@ -31,5 +37,6 @@ async function getAuth(profile: string, options?: AuthOptions): Promise<GoogleAp
 
 	const tokens = await getCredentials(profile, googleAuth, options);
 	googleAuth.setCredentials(tokens);
+	google.options({ auth : googleAuth });
 	return googleAuth;
 }

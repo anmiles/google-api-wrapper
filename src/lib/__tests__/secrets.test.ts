@@ -176,27 +176,28 @@ describe('src/lib/secrets', () => {
 			json = credentialsJSON;
 		});
 
-		it('should not get json from credentials file if persisting enabled', async () => {
-			await original.getCredentials(profile, auth, { persist : true });
+		it('should get json from credentials file by default', async () => {
+			await original.getCredentials(profile, auth);
 
 			expect(getJSONAsyncSpy).toBeCalled();
 			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
 		});
 
-		it('should not get json from credentials file if persisting disabled', async () => {
-			await original.getCredentials(profile, auth, { persist : false });
+		it('should get json from credentials file if temporariness explicitly unset', async () => {
+			await original.getCredentials(profile, auth, { temporary : false });
+
+			expect(getJSONAsyncSpy).toBeCalled();
+			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
+		});
+
+		it('should not get json from credentials file if temporariness set', async () => {
+			await original.getCredentials(profile, auth, { temporary : true });
 
 			expect(getJSONAsyncSpy).not.toBeCalled();
 		});
 
-		it('should not get json from credentials file if persisting not specified', async () => {
+		it('should fallback to createCredentials by default', async () => {
 			await original.getCredentials(profile, auth);
-
-			expect(getJSONAsyncSpy).not.toBeCalled();
-		});
-
-		it('should fallback to createCredentials if persisting enabled', async () => {
-			await original.getCredentials(profile, auth, { persist : true });
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			await fallback();
@@ -204,32 +205,35 @@ describe('src/lib/secrets', () => {
 			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
 		});
 
-		it('should call createCredentials directly if persisting disabled', async () => {
-			await original.getCredentials(profile, auth, { persist : false });
+		it('should call createCredentials directly if temporariness explicitly unset', async () => {
+			await original.getCredentials(profile, auth, { temporary : false });
+
+			const fallback = getJSONAsyncSpy.mock.calls[0][1];
+			await fallback();
 
 			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
 		});
 
-		it('should call createCredentials directly if persisting not specified', async () => {
-			await original.getCredentials(profile, auth);
+		it('should call createCredentials directly if temporariness set', async () => {
+			await original.getCredentials(profile, auth, { temporary : true });
 
 			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
 		});
 
-		it('should return credentials if persisting enabled', async () => {
-			const result = await original.getCredentials(profile, auth, { persist : true });
+		it('should return credentials by default', async () => {
+			const result = await original.getCredentials(profile, auth);
 
 			expect(result).toEqual(credentialsJSON);
 		});
 
-		it('should return nothing if persisting disabled', async () => {
-			const result = await original.getCredentials(profile, auth, { persist : false });
+		it('should return credentials if temporariness explicitly unset', async () => {
+			const result = await original.getCredentials(profile, auth, {  temporary : false });
 
-			expect(result).toBeUndefined();
+			expect(result).toEqual(credentialsJSON);
 		});
 
-		it('should return nothing if persisting not specified', async () => {
-			const result = await original.getCredentials(profile, auth);
+		it('should return nothing if temporariness set', async () => {
+			const result = await original.getCredentials(profile, auth, {  temporary : true });
 
 			expect(result).toBeUndefined();
 		});

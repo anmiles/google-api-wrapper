@@ -64,8 +64,8 @@ describe('src/lib/api/shared', () => {
 			});
 		});
 
-		it('should output progress if requested', async () => {
-			await original.getItems(api, args, { showProgress : true });
+		it('should output progress by default', async () => {
+			await original.getItems(api, args);
 
 			expect(logger.log).toBeCalledTimes(response.length);
 			expect(logger.log).toBeCalledWith('Getting items (2 of 4)...');
@@ -73,8 +73,8 @@ describe('src/lib/api/shared', () => {
 			expect(logger.log).toBeCalledWith('Getting items (4 of 4)...');
 		});
 
-		it('should not output progress by default', async () => {
-			await original.getItems(api, args);
+		it('should not output progress if hidden', async () => {
+			await original.getItems(api, args, { hideProgress : true });
 
 			expect(logger.log).not.toBeCalled();
 		});

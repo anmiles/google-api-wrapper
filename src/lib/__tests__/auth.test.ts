@@ -30,6 +30,7 @@ jest.mock('googleapis', () => ({
 		auth : {
 			OAuth2 : jest.fn().mockImplementation(() => googleAuth),
 		},
+		options : jest.fn(),
 	},
 }));
 
@@ -58,15 +59,38 @@ describe('src/lib/auth', () => {
 			expect(profiles.getProfiles).toBeCalledWith();
 		});
 
-		it('should auth all profiles with persistence', async () => {
+		it('should auth all profiles', async () => {
 			await original.login();
 
 			allProfiles.forEach((profile) => {
-				expect(auth.getAuth).toBeCalledWith(profile, { persist : true });
+				expect(auth.getAuth).toBeCalledWith(profile, undefined);
 			});
 		});
 
-		it('should show auth progress for all profiles', async () => {
+		it('should auth only specified profile', async () => {
+			await original.login('username1');
+
+			expect(auth.getAuth).toBeCalledWith('username1', undefined);
+			expect(auth.getAuth).not.toBeCalledWith('username2', undefined);
+		});
+
+		it('should pass temporariness for all profiles', async () => {
+			await original.login(undefined, { temporary : true });
+
+			expect(auth.getAuth).toBeCalledWith('username1', { temporary : true });
+			expect(auth.getAuth).toBeCalledWith('username2', { temporary : true });
+
+		});
+
+		it('should pass temporariness only for specified profile', async () => {
+			await original.login('username1', { temporary : true });
+
+			expect(auth.getAuth).toBeCalledWith('username1', { temporary : true });
+			expect(auth.getAuth).not.toBeCalledWith('username2', { temporary : true });
+
+		});
+
+		it('should show auth progress for all profiles by default', async () => {
 			await original.login();
 
 			expect(logger.warn).toBeCalledWith('username1 - logging in...');
@@ -75,11 +99,18 @@ describe('src/lib/auth', () => {
 			expect(logger.info).toBeCalledWith('username2 - logged in successfully');
 		});
 
-		it('should auth only specified profile', async () => {
+		it('should show auth progress for specified profile by default', async () => {
 			await original.login('username1');
 
-			expect(auth.getAuth).toBeCalledWith('username1', { persist : true });
-			expect(auth.getAuth).not.toBeCalledWith('username2', { persist : true });
+			expect(logger.warn).toBeCalledWith('username1 - logging in...');
+			expect(logger.info).toBeCalledWith('username1 - logged in successfully');
+		});
+
+		it('should not show auth progress if hidden', async () => {
+			await original.login(undefined, { hideProgress : true });
+			await original.login('username1', { hideProgress : true });
+
+			expect(logger.info).not.toBeCalled();
 		});
 	});
 
@@ -104,15 +135,16 @@ describe('src/lib/auth', () => {
 			expect(googleAuth.setCredentials).toBeCalledWith(credentials);
 		});
 
-		it('should pass persistence', async () => {
-			await original.getAuth(profile, { persist : true });
+		it('should pass temporariness', async () => {
+			await original.getAuth(profile, { temporary : true });
 
-			expect(secrets.getCredentials).toBeCalledWith(profile, googleAuth, { persist : true });
+			expect(secrets.getCredentials).toBeCalledWith(profile, googleAuth, { temporary : true });
 		});
 
-		it('should return google auth', async () => {
-			const result = await original.getAuth(profile);
-			expect(result).toEqual(googleAuth);
+		it('should set google auth', async () => {
+			await original.getAuth(profile);
+
+			expect(google.options).toBeCalledWith({ auth : googleAuth });
 		});
 	});
 });

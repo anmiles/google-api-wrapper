@@ -11,6 +11,6 @@ export interface Secrets {
 }
 
 export interface AuthOptions {
-	persist?: boolean
+	temporary?: boolean
 }
 

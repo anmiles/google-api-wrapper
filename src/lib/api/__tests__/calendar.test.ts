@@ -24,10 +24,10 @@ describe('src/lib/api/calendar', () => {
 			expect(auth.getAuth).toBeCalledWith(profile, undefined);
 		});
 
-		it('should pass persistence', async () => {
-			await getAPI(profile, { persist : true });
+		it('should pass temporariness', async () => {
+			await getAPI(profile, { temporary : true });
 
-			expect(auth.getAuth).toBeCalledWith(profile, { persist : true });
+			expect(auth.getAuth).toBeCalledWith(profile, { temporary : true });
 		});
 
 		it('should get calendar api', async () => {

@@ -30,9 +30,9 @@ function getSecrets(profile: string): Secrets {
 async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Client, options?: AuthOptions): Promise<GoogleApis.Auth.Credentials> {
 	const credentialsFile = getCredentialsFile(profile);
 
-	return options?.persist
-		? getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth))
-		: secrets.createCredentials(profile, auth);
+	return options?.temporary
+		? secrets.createCredentials(profile, auth)
+		: getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth));
 }
 
 async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client): Promise<GoogleApis.Auth.Credentials> {

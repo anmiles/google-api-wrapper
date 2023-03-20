@@ -1,16 +1,20 @@
 import type GoogleApis from 'googleapis';
-import type { GetItemsOptions } from '../../types';
+import type { CommonOptions } from '../../types';
 import { log } from '../logger';
 import { sleep } from '../sleep';
 
 export { getItems };
 export default { getItems };
 
-type CommonApi<TArgs, TResponse> = {
+const requestInterval = 300;
+
+type CommonApi<TItem> = {
 	list: (
-		params: TArgs & {pageToken: string | undefined},
-		options?: GoogleApis.Common.MethodOptions | undefined
-	) => Promise<GoogleApis.Common.GaxiosResponse<TResponse>>
+		params?: { pageToken: string | undefined },
+		options?: GoogleApis.Common.MethodOptions
+	) => Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>
+} & {
+	list: (callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void) => void
 };
 
 type CommonResponse<TItem> = {
@@ -21,28 +25,21 @@ type CommonResponse<TItem> = {
 	nextPageToken?: string | null | undefined
 };
 
-const requestInterval = 300;
-
-async function getItems<
-	TApi extends CommonApi<TArgs, TResponse>,
-	TItem,
-	TArgs,
-	TResponse extends CommonResponse<TItem>
->(api: TApi, args: TArgs, options?: GetItemsOptions): Promise<TItem[]> {
+async function getItems<TItem>(api: CommonApi<TItem>, params: any, options?: CommonOptions): Promise<TItem[]> {
 	const items: TItem[] = [];
 
 	let pageToken: string | null | undefined = undefined;
 
 	do {
-		const response: GoogleApis.Common.GaxiosResponse<TResponse> = await api.list({ ...args, pageToken });
+		const response: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> = await api.list({ ...params, pageToken });
 		response.data.items?.forEach((item) => items.push(item));
 
-		if (options?.showProgress) {
+		if (!options?.hideProgress) {
 			log(`Getting items (${items.length} of ${response.data.pageInfo?.totalResults || 'many'})...`);
 		}
 
-		pageToken = response.data.nextPageToken;
 		await sleep(requestInterval);
+		pageToken = response.data.nextPageToken;
 	} while (pageToken);
 
 	return items;
