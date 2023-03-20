@@ -176,15 +176,27 @@ describe('src/lib/secrets', () => {
 			json = credentialsJSON;
 		});
 
-		it('should get json from credentials file', async () => {
-			await original.getCredentials(profile, auth);
+		it('should not get json from credentials file if persisting enabled', async () => {
+			await original.getCredentials(profile, auth, { persist : true });
 
 			expect(getJSONAsyncSpy).toBeCalled();
 			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
 		});
 
-		it('should fallback to createCredentials', async () => {
+		it('should not get json from credentials file if persisting disabled', async () => {
+			await original.getCredentials(profile, auth, { persist : false });
+
+			expect(getJSONAsyncSpy).not.toBeCalled();
+		});
+
+		it('should not get json from credentials file if persisting not specified', async () => {
 			await original.getCredentials(profile, auth);
+
+			expect(getJSONAsyncSpy).not.toBeCalled();
+		});
+
+		it('should fallback to createCredentials if persisting enabled', async () => {
+			await original.getCredentials(profile, auth, { persist : true });
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			await fallback();
@@ -192,10 +204,34 @@ describe('src/lib/secrets', () => {
 			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
 		});
 
-		it('should return credentials', async () => {
-			const result = await original.getCredentials(profile, auth);
+		it('should call createCredentials directly if persisting disabled', async () => {
+			await original.getCredentials(profile, auth, { persist : false });
+
+			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
+		});
+
+		it('should call createCredentials directly if persisting not specified', async () => {
+			await original.getCredentials(profile, auth);
+
+			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
+		});
+
+		it('should return credentials if persisting enabled', async () => {
+			const result = await original.getCredentials(profile, auth, { persist : true });
 
 			expect(result).toEqual(credentialsJSON);
+		});
+
+		it('should return nothing if persisting disabled', async () => {
+			const result = await original.getCredentials(profile, auth, { persist : false });
+
+			expect(result).toBeUndefined();
+		});
+
+		it('should return nothing if persisting not specified', async () => {
+			const result = await original.getCredentials(profile, auth);
+
+			expect(result).toBeUndefined();
 		});
 	});
 

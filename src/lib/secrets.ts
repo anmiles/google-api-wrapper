@@ -1,7 +1,7 @@
 import http from 'http';
 import * as colorette from 'colorette';
 import type GoogleApis from 'googleapis';
-import type { Secrets } from '../types';
+import type { Secrets, AuthOptions } from '../types';
 import { getJSON, getJSONAsync } from './jsonLib';
 import { info, error } from './logger';
 import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
@@ -27,9 +27,12 @@ function getSecrets(profile: string): Secrets {
 	return secretsObject;
 }
 
-async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Client): Promise<GoogleApis.Auth.Credentials> {
+async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Client, options?: AuthOptions): Promise<GoogleApis.Auth.Credentials> {
 	const credentialsFile = getCredentialsFile(profile);
-	return getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth));
+
+	return options?.persist
+		? getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth))
+		: secrets.createCredentials(profile, auth);
 }
 
 async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client): Promise<GoogleApis.Auth.Credentials> {

@@ -1,7 +1,6 @@
 import logger from '../../logger';
 import sleep from '../../sleep';
 import shared from '../shared';
-import apiHelpers from './apiHelpers';
 
 const original = jest.requireActual('../shared').default as typeof shared;
 jest.mock<Partial<typeof shared>>('../shared', () => ({
@@ -35,7 +34,24 @@ const pageTokens = [
 	'token2',
 ];
 
-const api  = apiHelpers.getAPI(response, pageTokens);
+const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | undefined>) => ({
+	list : jest.fn().mockImplementation(async ({ pageToken }: {pageToken?: string}) => {
+		const index = pageTokens.indexOf(pageToken);
+
+		return {
+			data : {
+				items         : items[index],
+				nextPageToken : pageTokens[index + 1],
+				pageInfo      : !items[index] ? null : {
+					totalResults : items.reduce((sum, list) => sum + (list?.length || 0), 0),
+				},
+			},
+		};
+	}),
+	update : jest.fn(),
+});
+
+const api  = getAPI(response, pageTokens);
 const args = { key : 'value' };
 
 describe('src/lib/api/shared', () => {

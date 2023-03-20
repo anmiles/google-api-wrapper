@@ -58,11 +58,11 @@ describe('src/lib/auth', () => {
 			expect(profiles.getProfiles).toBeCalledWith();
 		});
 
-		it('should auth all profiles', async () => {
+		it('should auth all profiles with persistence', async () => {
 			await original.login();
 
 			allProfiles.forEach((profile) => {
-				expect(auth.getAuth).toBeCalledWith(profile);
+				expect(auth.getAuth).toBeCalledWith(profile, { persist : true });
 			});
 		});
 
@@ -78,8 +78,8 @@ describe('src/lib/auth', () => {
 		it('should auth only specified profile', async () => {
 			await original.login('username1');
 
-			expect(auth.getAuth).toBeCalledWith('username1');
-			expect(auth.getAuth).not.toBeCalledWith('username2');
+			expect(auth.getAuth).toBeCalledWith('username1', { persist : true });
+			expect(auth.getAuth).not.toBeCalledWith('username2', { persist : true });
 		});
 	});
 
@@ -91,7 +91,7 @@ describe('src/lib/auth', () => {
 
 		it('should get credentials', async () => {
 			await original.getAuth(profile);
-			expect(secrets.getCredentials).toBeCalledWith(profile, googleAuth);
+			expect(secrets.getCredentials).toBeCalledWith(profile, googleAuth, undefined);
 		});
 
 		it('should create OAuth2 instance', async () => {
@@ -102,6 +102,12 @@ describe('src/lib/auth', () => {
 		it('should set credentials', async () => {
 			await original.getAuth(profile);
 			expect(googleAuth.setCredentials).toBeCalledWith(credentials);
+		});
+
+		it('should pass persistence', async () => {
+			await original.getAuth(profile, { persist : true });
+
+			expect(secrets.getCredentials).toBeCalledWith(profile, googleAuth, { persist : true });
 		});
 
 		it('should return google auth', async () => {

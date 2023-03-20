@@ -9,3 +9,8 @@ export interface Secrets {
 		redirect_uris: string[];
 	};
 }
+
+export interface AuthOptions {
+	persist?: boolean
+}
+
