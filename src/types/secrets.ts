@@ -11,6 +11,7 @@ export interface Secrets {
 }
 
 export interface AuthOptions {
-	temporary?: boolean
+	temporary?: boolean;
+	scopes?: string[];
 }
 

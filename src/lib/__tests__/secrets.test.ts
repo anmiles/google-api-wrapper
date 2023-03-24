@@ -202,7 +202,7 @@ describe('src/lib/secrets', () => {
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			await fallback();
 
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
+			expect(secrets.createCredentials).toBeCalledWith(profile, auth, undefined);
 		});
 
 		it('should call createCredentials directly if temporariness explicitly unset', async () => {
@@ -211,13 +211,13 @@ describe('src/lib/secrets', () => {
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			await fallback();
 
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
+			expect(secrets.createCredentials).toBeCalledWith(profile, auth, { temporary : false });
 		});
 
 		it('should call createCredentials directly if temporariness set', async () => {
 			await original.getCredentials(profile, auth, { temporary : true });
 
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth);
+			expect(secrets.createCredentials).toBeCalledWith(profile, auth, { temporary : true });
 		});
 
 		it('should return credentials by default', async () => {
@@ -270,6 +270,18 @@ describe('src/lib/secrets', () => {
 			});
 		});
 
+		it('should generate authUrl with custom scopes', async () => {
+			willOpen(request, 100);
+
+			await original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
+
+			expect(auth.generateAuthUrl).toBeCalledWith({
+				// eslint-disable-next-line camelcase
+				access_type : 'offline',
+				scope      	: [ 'scope1', 'scope2' ],
+			});
+		});
+
 		it('should create server on 6006 port', async () => {
 			willOpen(request, 100);
 
@@ -285,6 +297,14 @@ describe('src/lib/secrets', () => {
 			await original.createCredentials(profile, auth);
 
 			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events.readonly`);
+		});
+
+		it('should ask to open browser page with custom scopes', async () => {
+			willOpen(request, 100);
+
+			await original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
+
+			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:scope1,scope2`);
 		});
 
 		it('should ask to close webpage', async () => {

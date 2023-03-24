@@ -31,12 +31,12 @@ async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Cli
 	const credentialsFile = getCredentialsFile(profile);
 
 	return options?.temporary
-		? secrets.createCredentials(profile, auth)
-		: getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth));
+		? secrets.createCredentials(profile, auth, options)
+		: getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth, options));
 }
 
-async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client): Promise<GoogleApis.Auth.Credentials> {
-	const scope = secrets.getScopes();
+async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client, options?: AuthOptions): Promise<GoogleApis.Auth.Credentials> {
+	const scope = options?.scopes || secrets.getScopes();
 
 	return new Promise((resolve) => {
 		const authUrl = auth.generateAuthUrl({
