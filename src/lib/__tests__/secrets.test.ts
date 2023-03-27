@@ -23,8 +23,10 @@ jest.mock<Partial<typeof http>>('http', () => ({
 		serverCallback = callback;
 
 		return {
+			on,
 			listen,
 			close,
+			destroy,
 		};
 	}),
 }));
@@ -103,10 +105,24 @@ let serverCallback: (
 
 let closedTime: number;
 
+const on = jest.fn().mockImplementation((event: string, listener: (...args: any[]) => void) => {
+	if (event === 'connection') {
+		// always simulate opening several connections once connections are meant to be listened
+		connections.forEach((connection) => listener(connection));
+	}
+});
+
 const listen = jest.fn();
 const close  = jest.fn().mockImplementation(() => {
 	closedTime = new Date().getTime();
 });
+const destroy = jest.fn();
+
+const connections = [
+	{ remoteAddress : 'server', remotePort : '1001', on : jest.fn(), destroy : jest.fn() },
+	{ remoteAddress : 'server', remotePort : '1002', on : jest.fn(), destroy : jest.fn() },
+	{ remoteAddress : 'server', remotePort : '1003', on : jest.fn(), destroy : jest.fn() },
+];
 
 describe('src/lib/secrets', () => {
 	describe('getScopes', () => {
@@ -315,12 +331,14 @@ describe('src/lib/secrets', () => {
 			expect(response.end).toBeCalledWith('<h1>Please close this page and return to application. Wait for application to be finished automatically.</h1>');
 		});
 
-		it('should close server if request.url is truthy', async () => {
+		it('should close server and destroy all connections if request.url is truthy', async () => {
 			willOpen(request, 100);
 
 			await original.createCredentials(profile, auth);
 
 			expect(close).toBeCalled();
+
+			connections.forEach((connection) => expect(connection.destroy).toBeCalled());
 		});
 
 		it('should only resolve when request.url is truthy', async () => {

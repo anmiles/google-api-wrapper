@@ -1,4 +1,5 @@
 import http from 'http';
+import enableDestroy from 'server-destroy';
 import * as colorette from 'colorette';
 import type GoogleApis from 'googleapis';
 import type { Secrets, AuthOptions } from '../types';
@@ -56,12 +57,13 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 					return;
 				}
 
-				server.close();
+				server.destroy();
 				const { tokens } = await auth.getToken(code);
 				resolve(tokens);
 			}
 		});
 
+		enableDestroy(server);
 		server.listen(callbackPort);
 		info(`Please open ${colorette.yellow(authUrl)} in your browser using google profile for ${colorette.yellow(profile)} and allow access to ${colorette.yellow(scope.join(','))}`);
 	});
