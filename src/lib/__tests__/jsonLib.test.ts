@@ -33,10 +33,14 @@ const json         = { key : 'value' };
 const jsonString   = JSON.stringify(json, null, '    ');
 const fallbackJSON = { fallbackKey : 'fallbackValue' };
 
+let fileExists: boolean;
+let validation: boolean;
+
+const validateCallback      = jest.fn().mockImplementation(() => validation);
+const validateCallbackAsync = jest.fn().mockImplementation(async () => validation);
+
 const createCallback      = jest.fn().mockReturnValue(fallbackJSON);
 const createCallbackAsync = jest.fn().mockResolvedValue(fallbackJSON);
-
-let fileExists: boolean;
 
 describe('src/lib/jsonLib', () => {
 	describe('readJSON', () => {
@@ -62,91 +66,175 @@ describe('src/lib/jsonLib', () => {
 	});
 
 	describe('getJSON', () => {
-		it('should call readJSON if file exists', () => {
-			fileExists = true;
 
-			original.getJSON(filename, createCallback);
+		it('should call readJSON if file exists and json is valid', () => {
+			fileExists = true;
+			validation = true;
+
+			original.getJSON(filename, createCallback, validateCallback);
 
 			expect(jsonLib.readJSON).toBeCalledWith(filename);
 			expect(createCallback).not.toBeCalled();
 		});
 
+		it('should call createCallback if file exists but json is not valid', () => {
+			fileExists = true;
+			validation = false;
+
+			original.getJSON(filename, createCallback, validateCallback);
+
+			expect(jsonLib.readJSON).toBeCalledWith(filename);
+			expect(createCallback).toBeCalledWith();
+		});
+
 		it('should call createCallback if file not exists', () => {
 			fileExists = false;
 
-			original.getJSON(filename, createCallback);
+			original.getJSON(filename, createCallback, validateCallback);
 
 			expect(jsonLib.readJSON).not.toBeCalled();
 			expect(createCallback).toBeCalledWith();
 		});
 
-		it('should write fallback JSON back if file not exists', () => {
-			fileExists = false;
+		it('should not write fallback JSON back if file exists and json is valid', () => {
+			fileExists = true;
+			validation = true;
 
-			original.getJSON(filename, createCallback);
+			original.getJSON(filename, createCallback, validateCallback);
+
+			expect(jsonLib.writeJSON).not.toBeCalled();
+		});
+
+		it('should write fallback JSON back if file exists but json is not valid', () => {
+			fileExists = true;
+			validation = false;
+
+			original.getJSON(filename, createCallback, validateCallback);
 
 			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
 			expect(paths.ensureFile).toBeCalledWith(filename);
 			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
 		});
 
-		it('should return JSON if file exists', () => {
-			fileExists = true;
+		it('should write fallback JSON back if file not exists', () => {
+			fileExists = false;
 
-			const result = original.getJSON(filename, createCallback);
+			original.getJSON(filename, createCallback, validateCallback);
+
+			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toBeCalledWith(filename);
+			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
+		});
+
+		it('should return JSON if file exists and json is valid', () => {
+			fileExists = true;
+			validation = true;
+
+			const result = original.getJSON(filename, createCallback, validateCallback);
 
 			expect(result).toEqual(json);
+		});
+
+		it('should return fallback JSON if file exists but json is not valid', () => {
+			fileExists = true;
+			validation = false;
+
+			const result = original.getJSON(filename, createCallback, validateCallback);
+
+			expect(result).toEqual(fallbackJSON);
 		});
 
 		it('should return fallback JSON if file not exists', () => {
 			fileExists = false;
 
-			const result = original.getJSON(filename, createCallback);
+			const result = original.getJSON(filename, createCallback, validateCallback);
 
 			expect(result).toEqual(fallbackJSON);
 		});
 	});
 
 	describe('getJSONAsync', () => {
-		it('should call readJSON if file exists', async () => {
+		it('should call readJSON if file exists and json is valid', async () => {
 			fileExists = true;
+			validation = true;
 
-			await original.getJSONAsync(filename, createCallbackAsync);
+			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
 			expect(jsonLib.readJSON).toBeCalledWith(filename);
 			expect(createCallbackAsync).not.toBeCalled();
 		});
 
+		it('should call createCallback if file exists but json is not valid', async () => {
+			fileExists = true;
+			validation = false;
+
+			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
+
+			expect(jsonLib.readJSON).toBeCalledWith(filename);
+			expect(createCallbackAsync).toBeCalledWith();
+		});
+
 		it('should call createCallback if file not exists', async () => {
 			fileExists = false;
 
-			await original.getJSONAsync(filename, createCallbackAsync);
+			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
 			expect(jsonLib.readJSON).not.toBeCalled();
 			expect(createCallbackAsync).toBeCalledWith();
 		});
 
-		it('should write fallback JSON back if file not exists', async () => {
-			fileExists = false;
+		it('should not write fallback JSON back if file exists and json is valid', async () => {
+			fileExists = true;
+			validation = true;
 
-			await original.getJSONAsync(filename, createCallbackAsync);
+			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
+
+			expect(jsonLib.writeJSON).not.toBeCalled();
+		});
+
+		it('should write fallback JSON back if file exists but json is not valid', async () => {
+			fileExists = true;
+			validation = false;
+
+			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
 			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toBeCalledWith(filename);
 			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
 		});
 
-		it('should return JSON if file exists', async () => {
-			fileExists = true;
+		it('should write fallback JSON back if file not exists', async () => {
+			fileExists = false;
 
-			const result = await original.getJSONAsync(filename, createCallbackAsync);
+			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
+
+			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toBeCalledWith(filename);
+			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
+		});
+
+		it('should return JSON if file exists and json is valid', async () => {
+			fileExists = true;
+			validation = true;
+
+			const result = await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
 			expect(result).toEqual(json);
+		});
+
+		it('should return fallback JSON if file exists but json is not valid', async () => {
+			fileExists = true;
+			validation = false;
+
+			const result = await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
+
+			expect(result).toEqual(fallbackJSON);
 		});
 
 		it('should return fallback JSON if file not exists', async () => {
 			fileExists = false;
 
-			const result = await original.getJSONAsync(filename, createCallbackAsync);
+			const result = await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
 			expect(result).toEqual(fallbackJSON);
 		});

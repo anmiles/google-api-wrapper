@@ -1,6 +1,7 @@
 import http from 'http';
 import enableDestroy from 'server-destroy';
 import * as colorette from 'colorette';
+import open from 'open';
 import type GoogleApis from 'googleapis';
 import type { Secrets, AuthOptions } from '../types';
 import { getJSON, getJSONAsync } from './jsonLib';
@@ -10,10 +11,11 @@ import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
 import secrets from './secrets';
 
 export { getSecrets, getCredentials };
-export default { getScopes, getSecrets, getCredentials, createCredentials, checkSecrets, getSecretsError, getScopesError };
+export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, checkSecrets, getSecretsError, getScopesError };
 
-const callbackPort = 6006;
-const callbackURI  = `http://localhost:${callbackPort}/oauthcallback`;
+const callbackPort    = 6006;
+const callbackURI     = `http://localhost:${callbackPort}/oauthcallback`;
+const tokenExpiration = 7 * 24 * 60 * 60 * 1000;
 
 function getScopes(): string[] {
 	const scopesFile = getScopesFile();
@@ -33,7 +35,19 @@ async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Cli
 
 	return options?.temporary
 		? secrets.createCredentials(profile, auth, options)
-		: getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth, options));
+		: getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth, options), secrets.validateCredentials);
+}
+
+async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Promise<boolean> {
+	if (!credentials.access_token) {
+		return false;
+	}
+
+	if (!credentials.expiry_date) {
+		return true;
+	}
+
+	return new Date().getTime() - credentials.expiry_date < tokenExpiration;
 }
 
 async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client, options?: AuthOptions): Promise<GoogleApis.Auth.Credentials> {
@@ -65,7 +79,12 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 
 		enableDestroy(server);
 		server.listen(callbackPort);
-		info(`Please open ${colorette.yellow(authUrl)} in your browser using google profile for ${colorette.yellow(profile)} and allow access to ${colorette.yellow(scope.join(','))}`);
+
+		if (options?.temporary) {
+			info(`Please open ${colorette.yellow(authUrl)} in your browser using google profile for ${colorette.yellow(profile)} and allow access to ${colorette.yellow(scope.join(','))}`);
+		} else {
+			open(authUrl);
+		}
 	});
 }
 

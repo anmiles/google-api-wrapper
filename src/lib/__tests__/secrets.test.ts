@@ -1,6 +1,7 @@
 import http from 'http';
 import path from 'path';
 import * as colorette from 'colorette';
+import open from 'open';
 import type GoogleApis from 'googleapis';
 import jsonLib from '../jsonLib';
 import logger from '../logger';
@@ -9,13 +10,14 @@ import type { Secrets } from '../../types';
 import secrets from '../secrets';
 const original = jest.requireActual('../secrets').default as typeof secrets;
 jest.mock<typeof secrets>('../secrets', () => ({
-	getScopes      		 : jest.fn().mockImplementation(() => scopesJSON),
-	getSecrets      		: jest.fn().mockImplementation(() => secretsJSON),
-	getCredentials   	: jest.fn(),
-	createCredentials : jest.fn(),
-	checkSecrets   	  : jest.fn(),
-	getScopesError   	: jest.fn().mockImplementation(() => scopesError),
-	getSecretsError   : jest.fn().mockImplementation(() => secretsError),
+	getScopes           : jest.fn().mockImplementation(() => scopesJSON),
+	getSecrets          : jest.fn().mockImplementation(() => secretsJSON),
+	getCredentials      : jest.fn(),
+	validateCredentials : jest.fn(),
+	createCredentials   : jest.fn(),
+	checkSecrets        : jest.fn(),
+	getScopesError      : jest.fn().mockImplementation(() => scopesError),
+	getSecretsError     : jest.fn().mockImplementation(() => secretsError),
 }));
 
 jest.mock<Partial<typeof http>>('http', () => ({
@@ -38,6 +40,8 @@ jest.mock<Partial<typeof path>>('path', () => ({
 jest.mock<Partial<typeof colorette>>('colorette', () => ({
 	yellow : jest.fn().mockImplementation((text) => `yellow:${text}`),
 }));
+
+jest.mock<Partial<typeof open>>('open', () => jest.fn());
 
 jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
 	getJSON   	  : jest.fn().mockImplementation(() => json),
@@ -89,7 +93,7 @@ const code    = 'code';
 const authUrl = 'https://authUrl';
 const auth    = {
 	generateAuthUrl : jest.fn().mockReturnValue(authUrl),
-	getToken      		: jest.fn().mockReturnValue({ tokens : credentialsJSON }),
+	getToken        : jest.fn().mockResolvedValue({ tokens : credentialsJSON }),
 } as unknown as GoogleApis.Common.OAuth2Client;
 
 let request: http.IncomingMessage;
@@ -255,6 +259,31 @@ describe('src/lib/secrets', () => {
 		});
 	});
 
+	describe('validateCredentials', () => {
+		it('should return false if no access token', async () => {
+			expect(await original.validateCredentials({})).toEqual(false);
+		});
+
+		it('should return true if no expiration', async () => {
+			// eslint-disable-next-line camelcase
+			expect(await original.validateCredentials({ access_token : 'token' })).toEqual(true);
+		});
+
+		it('should return true if credentials are not more than 1 week ago', async () => {
+			const expiryDate = new Date();
+			expiryDate.setDate(expiryDate.getDate() - 6);
+			// eslint-disable-next-line camelcase
+			expect(await original.validateCredentials({ access_token : 'token', expiry_date : expiryDate.getTime() })).toEqual(true);
+		});
+
+		it('should return true if credentials are more than 1 week ago', async () => {
+			const expiryDate = new Date();
+			expiryDate.setDate(expiryDate.getDate() - 8);
+			// eslint-disable-next-line camelcase
+			expect(await original.validateCredentials({ access_token : 'token', expiry_date : expiryDate.getTime() })).toEqual(false);
+		});
+	});
+
 	describe('createCredentials', () => {
 		function willOpen(request: http.IncomingMessage, timeout: number) {
 			setTimeout(async () => {
@@ -307,19 +336,30 @@ describe('src/lib/secrets', () => {
 			expect(listen).toBeCalledWith(6006);
 		});
 
-		it('should ask to open browser page', async () => {
+		it('should open browser page without prompt if this is permanent request that tends to save credentials in the file', async () => {
 			willOpen(request, 100);
 
 			await original.createCredentials(profile, auth);
 
+			expect(open).toBeCalledWith('https://authUrl');
+			expect(logger.info).not.toBeCalled();
+		});
+
+		it('should ask to open browser page', async () => {
+			willOpen(request, 100);
+
+			await original.createCredentials(profile, auth, { temporary : true });
+
+			expect(open).not.toBeCalled();
 			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events.readonly`);
 		});
 
 		it('should ask to open browser page with custom scopes', async () => {
 			willOpen(request, 100);
 
-			await original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
+			await original.createCredentials(profile, auth, { temporary : true, scopes : [ 'scope1', 'scope2' ] });
 
+			expect(open).not.toBeCalled();
 			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:scope1,scope2`);
 		});
 

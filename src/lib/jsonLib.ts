@@ -7,9 +7,13 @@ import jsonLib from './jsonLib';
 export { getJSON, getJSONAsync, writeJSON };
 export default { getJSON, getJSONAsync, writeJSON, readJSON, checkJSON };
 
-function getJSON<T>(filename: string, createCallback: () => Exclude<T, Promise<any>>): T {
+function getJSON<T>(filename: string, createCallback: () => Exclude<T, Promise<any>>, validateJSON?: (json: T) => boolean): T {
 	if (fs.existsSync(filename)) {
-		return jsonLib.readJSON(filename);
+		const json = jsonLib.readJSON<T>(filename);
+
+		if (!validateJSON || validateJSON(json)) {
+			return json;
+		}
 	}
 
 	const json = createCallback();
@@ -19,13 +23,18 @@ function getJSON<T>(filename: string, createCallback: () => Exclude<T, Promise<a
 	return json;
 }
 
-async function getJSONAsync<T>(filename: string, createCallbackAsync: () => Promise<T>): Promise<T> {
+async function getJSONAsync<T>(filename: string, createCallbackAsync: () => Promise<T>, validateJSONAsync?: (json: T) => Promise<boolean>): Promise<T> {
 	if (fs.existsSync(filename)) {
-		return jsonLib.readJSON(filename);
+		const json = jsonLib.readJSON<T>(filename);
+
+		if (!validateJSONAsync || await validateJSONAsync(json)) {
+			return json;
+		}
 	}
 
 	const json = await createCallbackAsync();
 	jsonLib.checkJSON(filename, json);
+	ensureFile(filename);
 	jsonLib.writeJSON(filename, json);
 	return json;
 }

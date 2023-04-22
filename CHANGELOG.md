@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0](../../tags/v7.0.0) - 2023-04-22
+### Changed
+- Invalidate tokens after 7 days due to Google policy for testing apps
+
 ## [6.1.1](../../tags/v6.1.1) - 2023-03-27
 ### Changed
 - Immediately destroy server after receiving needed response
