@@ -5,6 +5,7 @@ import open from 'open';
 import type GoogleApis from 'googleapis';
 import jsonLib from '../jsonLib';
 import logger from '../logger';
+import paths from '../paths';
 import type { Secrets } from '../../types';
 
 import secrets from '../secrets';
@@ -14,7 +15,7 @@ jest.mock<typeof secrets>('../secrets', () => ({
 	getSecrets          : jest.fn().mockImplementation(() => secretsJSON),
 	getCredentials      : jest.fn(),
 	validateCredentials : jest.fn(),
-	createCredentials   : jest.fn(),
+	createCredentials   : jest.fn().mockImplementation(() => credentialsJSON),
 	checkSecrets        : jest.fn(),
 	getScopesError      : jest.fn().mockImplementation(() => scopesError),
 	getSecretsError     : jest.fn().mockImplementation(() => secretsError),
@@ -46,8 +47,9 @@ jest.mock('open', () => jest.fn().mockImplementation((url: string) => {
 }));
 
 jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
-	getJSON   	  : jest.fn().mockImplementation(() => json),
+	getJSON      : jest.fn().mockImplementation(() => json),
 	getJSONAsync : jest.fn().mockImplementation(async () => json),
+	readJSON     : jest.fn().mockImplementation(async () => json),
 }));
 
 jest.mock<Partial<typeof logger>>('../logger', () => ({
@@ -55,6 +57,13 @@ jest.mock<Partial<typeof logger>>('../logger', () => ({
 	error : jest.fn().mockImplementation((error) => {
 		throw error;
 	}) as jest.Mock<never, any>,
+}));
+
+jest.mock<Partial<typeof paths>>('../paths', () => ({
+	getScopesFile      : jest.fn().mockImplementation(() => scopesFile),
+	getSecretsFile     : jest.fn().mockImplementation(() => secretsFile),
+	getCredentialsFile : jest.fn().mockImplementation(() => credentialsFile),
+	ensureFile         : jest.fn().mockImplementation(() => fileExists),
 }));
 
 const profile          = 'username1';
@@ -85,11 +94,12 @@ const secretsJSON: Secrets = {
 	},
 };
 
-const credentialsJSON = {
-	token : {},
+const credentialsJSON: GoogleApis.Auth.Credentials = {
+	// eslint-disable-next-line camelcase
+	access_token : 'access_token222',
 };
 
-let json: object;
+let json: any;
 
 const code    = 'code';
 const authUrl = 'https://authUrl';
@@ -137,6 +147,8 @@ const connections = [
 	{ remoteAddress : 'server', remotePort : '1002', on : jest.fn(), destroy : jest.fn() },
 	{ remoteAddress : 'server', remotePort : '1003', on : jest.fn(), destroy : jest.fn() },
 ];
+
+let fileExists: boolean;
 
 describe('src/lib/secrets', () => {
 	describe('getScopes', () => {
@@ -203,7 +215,8 @@ describe('src/lib/secrets', () => {
 		const getJSONAsyncSpy = jest.spyOn(jsonLib, 'getJSONAsync');
 
 		beforeEach(() => {
-			json = credentialsJSON;
+			json       = credentialsJSON;
+			fileExists = false;
 		});
 
 		it('should get json from credentials file by default', async () => {
@@ -213,7 +226,7 @@ describe('src/lib/secrets', () => {
 			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
 		});
 
-		it('should get json from credentials file if temporariness explicitly unset', async () => {
+		it('should get json from credentials file if temporariness not set', async () => {
 			await original.getCredentials(profile, auth, { temporary : false });
 
 			expect(getJSONAsyncSpy).toBeCalled();
@@ -226,8 +239,10 @@ describe('src/lib/secrets', () => {
 			expect(getJSONAsyncSpy).not.toBeCalled();
 		});
 
-		it('should fallback to createCredentials by default', async () => {
+		it('should call createCredentials in fallback', async () => {
 			await original.getCredentials(profile, auth);
+
+			expect(secrets.createCredentials).not.toBeCalled();
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			await fallback();
@@ -235,8 +250,10 @@ describe('src/lib/secrets', () => {
 			expect(secrets.createCredentials).toBeCalledWith(profile, auth, undefined);
 		});
 
-		it('should call createCredentials directly if temporariness explicitly unset', async () => {
+		it('should call createCredentials in fallback if temporariness not set', async () => {
 			await original.getCredentials(profile, auth, { temporary : false });
+
+			expect(secrets.createCredentials).not.toBeCalled();
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			await fallback();
@@ -250,22 +267,60 @@ describe('src/lib/secrets', () => {
 			expect(secrets.createCredentials).toBeCalledWith(profile, auth, { temporary : true });
 		});
 
-		it('should return credentials by default', async () => {
-			const result = await original.getCredentials(profile, auth);
+		it('should return credentials in fallback', async () => {
+			await original.getCredentials(profile, auth);
+
+			const fallback = getJSONAsyncSpy.mock.calls[0][1];
+			const result   = await fallback();
 
 			expect(result).toEqual(credentialsJSON);
 		});
 
-		it('should return credentials if temporariness explicitly unset', async () => {
-			const result = await original.getCredentials(profile, auth, {  temporary : false });
+		it('should return credentials in fallback and copy existing refresh token from existing file if created credentials do not have refresh token', async () => {
+			fileExists = true;
+			// eslint-disable-next-line camelcase
+			jest.spyOn(jsonLib, 'readJSON').mockReturnValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token' });
 
+			await original.getCredentials(profile, auth);
+
+			const fallback = getJSONAsyncSpy.mock.calls[0][1];
+			const result   = await fallback();
+
+			expect(jsonLib.readJSON).toBeCalledWith(credentialsFile);
+			// eslint-disable-next-line camelcase
+			expect(result).toEqual({ ...credentialsJSON, refresh_token : 'refresh_token' });
+		});
+
+		it('should return credentials in fallback and leave refresh_token undefined if there is no existing file', async () => {
+			fileExists = false;
+			// eslint-disable-next-line camelcase
+			jest.spyOn(jsonLib, 'readJSON').mockReturnValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token' });
+
+			await original.getCredentials(profile, auth);
+
+			const fallback = getJSONAsyncSpy.mock.calls[0][1];
+			const result   = await fallback();
+
+			expect(jsonLib.readJSON).not.toBeCalled();
+			// eslint-disable-next-line camelcase
 			expect(result).toEqual(credentialsJSON);
 		});
 
-		it('should return nothing if temporariness set', async () => {
-			const result = await original.getCredentials(profile, auth, {  temporary : true });
+		it('should return credentials in fallback and leave refresh_token as is if it is set from createCredentials', async () => {
+			fileExists = true;
+			// eslint-disable-next-line camelcase
+			jest.spyOn(secrets, 'createCredentials').mockResolvedValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token_1' });
+			// eslint-disable-next-line camelcase
+			jest.spyOn(jsonLib, 'readJSON').mockReturnValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token_2' });
 
-			expect(result).toBeUndefined();
+			await original.getCredentials(profile, auth);
+
+			const fallback = getJSONAsyncSpy.mock.calls[0][1];
+			const result   = await fallback();
+
+			expect(jsonLib.readJSON).toBeCalledWith(credentialsFile);
+			// eslint-disable-next-line camelcase
+			expect(result).toEqual({ ...credentialsJSON, refresh_token : 'refresh_token_1' });
 		});
 	});
 
@@ -274,23 +329,28 @@ describe('src/lib/secrets', () => {
 			expect(await original.validateCredentials({})).toEqual(false);
 		});
 
+		it('should return true if no refresh token', async () => {
+			// eslint-disable-next-line camelcase
+			expect(await original.validateCredentials({ access_token : 'token' })).toEqual(false);
+		});
+
 		it('should return true if no expiration', async () => {
 			// eslint-disable-next-line camelcase
-			expect(await original.validateCredentials({ access_token : 'token' })).toEqual(true);
+			expect(await original.validateCredentials({ access_token : 'token', refresh_token : 'token' })).toEqual(true);
 		});
 
 		it('should return true if credentials are not more than 1 week ago', async () => {
 			const expiryDate = new Date();
 			expiryDate.setDate(expiryDate.getDate() - 6);
 			// eslint-disable-next-line camelcase
-			expect(await original.validateCredentials({ access_token : 'token', expiry_date : expiryDate.getTime() })).toEqual(true);
+			expect(await original.validateCredentials({ access_token : 'token', refresh_token : 'token', expiry_date : expiryDate.getTime() })).toEqual(true);
 		});
 
 		it('should return true if credentials are more than 1 week ago', async () => {
 			const expiryDate = new Date();
 			expiryDate.setDate(expiryDate.getDate() - 8);
 			// eslint-disable-next-line camelcase
-			expect(await original.validateCredentials({ access_token : 'token', expiry_date : expiryDate.getTime() })).toEqual(false);
+			expect(await original.validateCredentials({ access_token : 'token', refresh_token : 'token', expiry_date : expiryDate.getTime() })).toEqual(false);
 		});
 	});
 
@@ -301,6 +361,22 @@ describe('src/lib/secrets', () => {
 			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth);
+
+			expect(auth.generateAuthUrl).toBeCalledWith({
+				// eslint-disable-next-line camelcase
+				access_type : 'offline',
+				prompt      : 'consent',
+				scope      	: [
+					'https://www.googleapis.com/auth/calendar.calendars.readonly',
+					'https://www.googleapis.com/auth/calendar.events.readonly',
+				],
+			});
+		});
+
+		it('should generate authUrl and do not require consent if credentials are temporary because refresh token is not required in credentials JSON', async () => {
+			willOpen(tokenUrl, 100);
+
+			await original.createCredentials(profile, auth, { temporary : true });
 
 			expect(auth.generateAuthUrl).toBeCalledWith({
 				// eslint-disable-next-line camelcase
@@ -320,6 +396,7 @@ describe('src/lib/secrets', () => {
 			expect(auth.generateAuthUrl).toBeCalledWith({
 				// eslint-disable-next-line camelcase
 				access_type : 'offline',
+				prompt      : 'consent',
 				scope      	: [ 'scope1', 'scope2' ],
 			});
 		});

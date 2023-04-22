@@ -3,9 +3,9 @@ import enableDestroy from 'server-destroy';
 import open from 'open';
 import type GoogleApis from 'googleapis';
 import type { Secrets, AuthOptions } from '../types';
-import { getJSON, getJSONAsync } from './jsonLib';
+import { getJSON, getJSONAsync, readJSON } from './jsonLib';
 import { warn, error } from './logger';
-import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
+import { getScopesFile, getSecretsFile, getCredentialsFile, ensureFile } from './paths';
 
 import secrets from './secrets';
 
@@ -33,13 +33,25 @@ function getSecrets(profile: string): Secrets {
 async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Client, options?: AuthOptions): Promise<GoogleApis.Auth.Credentials> {
 	const credentialsFile = getCredentialsFile(profile);
 
-	return options?.temporary
-		? secrets.createCredentials(profile, auth, options)
-		: getJSONAsync(credentialsFile, () => secrets.createCredentials(profile, auth, options), secrets.validateCredentials);
+	if (options?.temporary) {
+		return secrets.createCredentials(profile, auth, options);
+	}
+
+	return getJSONAsync(credentialsFile, async () => {
+		// eslint-disable-next-line camelcase
+		const refresh_token = ensureFile(credentialsFile) ? readJSON<GoogleApis.Auth.Credentials>(credentialsFile).refresh_token : undefined;
+		const credentials   = await secrets.createCredentials(profile, auth, options);
+		// eslint-disable-next-line camelcase
+		return { refresh_token, ...credentials };
+	}, secrets.validateCredentials);
 }
 
 async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Promise<boolean> {
 	if (!credentials.access_token) {
+		return false;
+	}
+
+	if (!credentials.refresh_token) {
 		return false;
 	}
 
@@ -57,6 +69,7 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 		const authUrl = auth.generateAuthUrl({
 			// eslint-disable-next-line camelcase
 			access_type : 'offline',
+			prompt      : options?.temporary ? undefined : 'consent',
 			scope,
 		});
 

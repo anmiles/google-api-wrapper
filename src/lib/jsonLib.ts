@@ -4,7 +4,7 @@ import { ensureFile } from './paths';
 
 import jsonLib from './jsonLib';
 
-export { getJSON, getJSONAsync, writeJSON };
+export { getJSON, getJSONAsync, writeJSON, readJSON };
 export default { getJSON, getJSONAsync, writeJSON, readJSON, checkJSON };
 
 function getJSON<T>(filename: string, createCallback: () => Exclude<T, Promise<any>>, validateJSON?: (json: T) => boolean): T {
