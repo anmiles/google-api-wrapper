@@ -1,11 +1,10 @@
 import http from 'http';
 import enableDestroy from 'server-destroy';
-import * as colorette from 'colorette';
 import open from 'open';
 import type GoogleApis from 'googleapis';
 import type { Secrets, AuthOptions } from '../types';
 import { getJSON, getJSONAsync } from './jsonLib';
-import { info, error } from './logger';
+import { warn, error } from './logger';
 import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
 
 import secrets from './secrets';
@@ -14,6 +13,7 @@ export { getSecrets, getCredentials };
 export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, checkSecrets, getSecretsError, getScopesError };
 
 const callbackPort    = 6006;
+const startURI        = `http://localhost:${callbackPort}/`;
 const callbackURI     = `http://localhost:${callbackPort}/oauthcallback`;
 const tokenExpiration = 7 * 24 * 60 * 60 * 1000;
 
@@ -61,31 +61,38 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 		});
 
 		const server = http.createServer(async (request, response) => {
-			response.end('<h1>Please close this page and return to application. Wait for application to be finished automatically.</h1>');
-
-			if (request.url) {
-				const url  = new URL(`http://${request.headers.host}${request.url}`);
-				const code = url.searchParams.get('code');
-
-				if (!code) {
-					return;
-				}
-
-				server.destroy();
-				const { tokens } = await auth.getToken(code);
-				resolve(tokens);
+			if (!request.url) {
+				response.end('');
+				return;
 			}
+
+			const url  = new URL(`http://${request.headers.host}${request.url}`);
+			const code = url.searchParams.get('code');
+
+			if (!code) {
+				response.end(formatMessage(`Please open <a href="${authUrl}">this link</a> in a browser that belongs to <strong>${profile}</strong> google profile`));
+				return;
+			}
+
+			response.end(formatMessage('Please close this page and return to application'));
+			server.destroy();
+			const { tokens } = await auth.getToken(code);
+			resolve(tokens);
 		});
 
 		enableDestroy(server);
 		server.listen(callbackPort);
-
-		if (options?.temporary) {
-			info(`Please open ${colorette.yellow(authUrl)} in your browser using google profile for ${colorette.yellow(profile)} and allow access to ${colorette.yellow(scope.join(','))}`);
-		} else {
-			open(authUrl);
-		}
+		warn('Please check your browser for further actions');
+		open(startURI);
 	});
+}
+
+function formatMessage(message: string): string {
+	return [
+		'<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">',
+		`<p>${message}</p>`,
+		'</div>',
+	].join('\n');
 }
 
 function checkSecrets(profile: string, secretsObject: Secrets, secretsFile: string): true | void {

@@ -41,7 +41,9 @@ jest.mock<Partial<typeof colorette>>('colorette', () => ({
 	yellow : jest.fn().mockImplementation((text) => `yellow:${text}`),
 }));
 
-jest.mock<Partial<typeof open>>('open', () => jest.fn());
+jest.mock('open', () => jest.fn().mockImplementation((url: string) => {
+	willOpen(url.replace('http://localhost:6006', ''));
+}));
 
 jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
 	getJSON   	  : jest.fn().mockImplementation(() => json),
@@ -49,7 +51,7 @@ jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
 }));
 
 jest.mock<Partial<typeof logger>>('../logger', () => ({
-	info  : jest.fn(),
+	warn  : jest.fn(),
 	error : jest.fn().mockImplementation((error) => {
 		throw error;
 	}) as jest.Mock<never, any>,
@@ -96,8 +98,6 @@ const auth    = {
 	getToken        : jest.fn().mockResolvedValue({ tokens : credentialsJSON }),
 } as unknown as GoogleApis.Common.OAuth2Client;
 
-let request: http.IncomingMessage;
-
 const response = {
 	end : jest.fn(),
 } as unknown as http.ServerResponse;
@@ -107,6 +107,16 @@ let serverCallback: (
 	response: http.ServerResponse
 ) => Promise<typeof credentialsJSON>;
 
+function willOpen(url: string | undefined, timeout?: number) {
+	setTimeout(async () => {
+		await serverCallback({
+			url,
+			headers : {
+				host : 'localhost:6006',
+			},
+		} as http.IncomingMessage, response);
+	}, timeout || 0);
+}
 let closedTime: number;
 
 const on = jest.fn().mockImplementation((event: string, listener: (...args: any[]) => void) => {
@@ -285,23 +295,10 @@ describe('src/lib/secrets', () => {
 	});
 
 	describe('createCredentials', () => {
-		function willOpen(request: http.IncomingMessage, timeout: number) {
-			setTimeout(async () => {
-				await serverCallback(request, response);
-			}, timeout);
-		}
-
-		beforeEach(() => {
-			request = {
-				url   	 : `/request.url?code=${code}`,
-				headers : {
-					host : 'localhost:6006',
-				},
-			} as http.IncomingMessage;
-		});
+		const tokenUrl = `/request.url?code=${code}`;
 
 		it('should generate authUrl', async () => {
-			willOpen(request, 100);
+			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth);
 
@@ -316,7 +313,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should generate authUrl with custom scopes', async () => {
-			willOpen(request, 100);
+			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
 
@@ -328,7 +325,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should create server on 6006 port', async () => {
-			willOpen(request, 100);
+			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth);
 
@@ -336,43 +333,43 @@ describe('src/lib/secrets', () => {
 			expect(listen).toBeCalledWith(6006);
 		});
 
-		it('should open browser page without prompt if this is permanent request that tends to save credentials in the file', async () => {
-			willOpen(request, 100);
+		it('should open browser page and warn about it', async () => {
+			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth);
 
-			expect(open).toBeCalledWith('https://authUrl');
-			expect(logger.info).not.toBeCalled();
+			expect(open).toBeCalledWith('http://localhost:6006/');
+			expect(logger.warn).toBeCalledWith('Please check your browser for further actions');
 		});
 
-		it('should ask to open browser page', async () => {
-			willOpen(request, 100);
+		it('should show nothing on the browser page if request.url is empty', async () => {
+			willOpen('', 100);
+			willOpen(tokenUrl, 200);
 
-			await original.createCredentials(profile, auth, { temporary : true });
+			await original.createCredentials(profile, auth);
 
-			expect(open).not.toBeCalled();
-			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events.readonly`);
+			expect(response.end).toBeCalledWith('');
 		});
 
-		it('should ask to open browser page with custom scopes', async () => {
-			willOpen(request, 100);
+		it('should show opening instructions if opened the home page', async () => {
+			willOpen('/', 100);
+			willOpen(tokenUrl, 200);
 
-			await original.createCredentials(profile, auth, { temporary : true, scopes : [ 'scope1', 'scope2' ] });
+			await original.createCredentials(profile, auth);
 
-			expect(open).not.toBeCalled();
-			expect(logger.info).toBeCalledWith(`Please open yellow:https://authUrl in your browser using google profile for yellow:${profile} and allow access to yellow:scope1,scope2`);
+			expect(response.end).toBeCalledWith(`<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">\n<p>Please open <a href="${authUrl}">this link</a> in a browser that belongs to <strong>${profile}</strong> google profile</p>\n</div>`);
 		});
 
 		it('should ask to close webpage', async () => {
-			willOpen(request, 100);
+			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith('<h1>Please close this page and return to application. Wait for application to be finished automatically.</h1>');
+			expect(response.end).toBeCalledWith('<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">\n<p>Please close this page and return to application</p>\n</div>');
 		});
 
 		it('should close server and destroy all connections if request.url is truthy', async () => {
-			willOpen(request, 100);
+			willOpen(tokenUrl, 100);
 
 			await original.createCredentials(profile, auth);
 
@@ -384,12 +381,10 @@ describe('src/lib/secrets', () => {
 		it('should only resolve when request.url is truthy', async () => {
 			const emptyRequestTime = 100;
 			const requestTime      = 200;
-			const emptyRequest     = { ...request } as http.IncomingMessage;
-			emptyRequest.url       = undefined;
 
 			const before = new Date().getTime();
-			willOpen(emptyRequest, emptyRequestTime);
-			willOpen(request, requestTime);
+			willOpen(undefined, emptyRequestTime);
+			willOpen(tokenUrl, requestTime);
 
 			const result = await original.createCredentials(profile, auth);
 			const after  = new Date().getTime();
@@ -403,12 +398,10 @@ describe('src/lib/secrets', () => {
 		it('should only resolve when request.url contains no code', async () => {
 			const noCodeRequestTime = 100;
 			const requestTime       = 200;
-			const noCodeRequest     = { ...request } as http.IncomingMessage;
-			noCodeRequest.url       = '/request.url?param=value';
 
 			const before = new Date().getTime();
-			willOpen(noCodeRequest, noCodeRequestTime);
-			willOpen(request, requestTime);
+			willOpen('/request.url?param=value', noCodeRequestTime);
+			willOpen(tokenUrl, requestTime);
 
 			const result = await original.createCredentials(profile, auth);
 			const after  = new Date().getTime();
@@ -420,7 +413,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should return credentials JSON', async () => {
-			willOpen(request, 100);
+			willOpen(tokenUrl, 100);
 
 			const result = await original.createCredentials(profile, auth);
 
