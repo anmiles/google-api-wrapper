@@ -40,7 +40,8 @@ async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Cli
 	return getJSONAsync(credentialsFile, async () => {
 		// eslint-disable-next-line camelcase
 		const refresh_token = ensureFile(credentialsFile) ? readJSON<GoogleApis.Auth.Credentials>(credentialsFile).refresh_token : undefined;
-		const credentials   = await secrets.createCredentials(profile, auth, options);
+		// eslint-disable-next-line camelcase
+		const credentials = await secrets.createCredentials(profile, auth, options, refresh_token ? undefined : 'consent');
 		// eslint-disable-next-line camelcase
 		return { refresh_token, ...credentials };
 	}, secrets.validateCredentials);
@@ -62,14 +63,14 @@ async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Pr
 	return new Date().getTime() - credentials.expiry_date < tokenExpiration;
 }
 
-async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client, options?: AuthOptions): Promise<GoogleApis.Auth.Credentials> {
+async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client, options?: AuthOptions, prompt?: GoogleApis.Auth.GenerateAuthUrlOpts['prompt']): Promise<GoogleApis.Auth.Credentials> {
 	const scope = options?.scopes || secrets.getScopes();
 
 	return new Promise((resolve) => {
 		const authUrl = auth.generateAuthUrl({
 			// eslint-disable-next-line camelcase
 			access_type : 'offline',
-			prompt      : options?.temporary ? undefined : 'consent',
+			prompt,
 			scope,
 		});
 
