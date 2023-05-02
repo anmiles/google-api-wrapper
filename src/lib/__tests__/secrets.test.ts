@@ -432,7 +432,14 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith(`<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">\n<p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p><p>Required scopes:</p><ul><li>https://www.googleapis.com/auth/calendar.calendars.readonly</li><li>https://www.googleapis.com/auth/calendar.events.readonly</li></ul>\n</div>`);
+			expect(response.end).toBeCalledWith(`\
+<div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
+<div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
+<p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p>\n\
+<p>Required scopes:</p>\n\
+<ul><li>https://www.googleapis.com/auth/calendar.calendars.readonly</li><li>https://www.googleapis.com/auth/calendar.events.readonly</li></ul>\n\
+</div>\n\
+</div>`);
 		});
 
 		it('should ask to close webpage', async () => {
@@ -440,7 +447,12 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith('<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">\n<p>Please close this page and return to application</p>\n</div>');
+			expect(response.end).toBeCalledWith('\
+<div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
+<div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
+<p>Please close this page and return to application</p>\n\
+</div>\n\
+</div>');
 		});
 
 		it('should close server and destroy all connections if request.url is truthy', async () => {
