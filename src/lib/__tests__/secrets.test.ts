@@ -432,7 +432,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith(`<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">\n<p>Please open <a href="${authUrl}">this link</a> in a browser that belongs to <strong>${profile}</strong> google profile</p>\n</div>`);
+			expect(response.end).toBeCalledWith(`<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">\n<p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p><p>Required scopes:</p><ul><li>https://www.googleapis.com/auth/calendar.calendars.readonly</li><li>https://www.googleapis.com/auth/calendar.events.readonly</li></ul>\n</div>`);
 		});
 
 		it('should ask to close webpage', async () => {

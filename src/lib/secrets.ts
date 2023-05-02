@@ -84,11 +84,12 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 			const code = url.searchParams.get('code');
 
 			if (!code) {
-				response.end(formatMessage(`Please open <a href="${authUrl}">this link</a> in a browser that belongs to <strong>${profile}</strong> google profile`));
+				const scopesList = scope.map((s) => `<li>${s}</li>`).join('');
+				response.end(formatMessage(`<p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p><p>Required scopes:</p><ul>${scopesList}</ul>`));
 				return;
 			}
 
-			response.end(formatMessage('Please close this page and return to application'));
+			response.end(formatMessage('<p>Please close this page and return to application</p>'));
 			server.destroy();
 			const { tokens } = await auth.getToken(code);
 			resolve(tokens);
@@ -104,7 +105,7 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 function formatMessage(message: string): string {
 	return [
 		'<div style="margin: 1em auto; padding: 0 1em; border: 1px solid black; max-width: 600px; text-align: center; font-family: Arial, sans-serif">',
-		`<p>${message}</p>`,
+		message,
 		'</div>',
 	].join('\n');
 }
