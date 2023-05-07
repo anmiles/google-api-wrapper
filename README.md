@@ -1,13 +1,16 @@
-# google-api-wrapper
+# @anmiles/google-api-wrapper
 
 Provides quick interface for getting google API data
 
 ----
 
+## Installation
+
+`npm install @anmiles/google-api-wrapper`
+
 ## Usage
 
 ``` bash
-> $ npm install @anmiles/google-api-wrapper
 > $ node ./auth.js
 > $ node ./videos.js
 ```

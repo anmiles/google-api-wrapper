@@ -8,8 +8,8 @@
     "auth"
   ],
   "author": "Anatoliy Oblaukhov",
-  "homepage": "https://gitlab.com/anmiles/google-api-wrapper",
-  "repository": "gitlab:anmiles/google-api-wrapper",
+  "homepage": "https://gitlab.com/anmiles/lib/google-api-wrapper",
+  "repository": "gitlab:anmiles/lib/google-api-wrapper",
   "license": "MIT",
   "engines": {
     "node": ">=18.14.2"
