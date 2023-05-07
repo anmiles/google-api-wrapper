@@ -47,7 +47,7 @@ describe('src/lib/jsonLib', () => {
 		it('should read specified file', () => {
 			original.readJSON(filename);
 
-			expect(fs.readFileSync).toBeCalledWith(filename);
+			expect(fs.readFileSync).toHaveBeenCalledWith(filename);
 		});
 
 		it('should return parsed JSON', () => {
@@ -61,7 +61,7 @@ describe('src/lib/jsonLib', () => {
 		it('should write JSON into specified file', () => {
 			original.writeJSON(filename, json);
 
-			expect(fs.writeFileSync).toBeCalledWith(filename, jsonString);
+			expect(fs.writeFileSync).toHaveBeenCalledWith(filename, jsonString);
 		});
 	});
 
@@ -73,8 +73,8 @@ describe('src/lib/jsonLib', () => {
 
 			original.getJSON(filename, createCallback, validateCallback);
 
-			expect(jsonLib.readJSON).toBeCalledWith(filename);
-			expect(createCallback).not.toBeCalled();
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(filename);
+			expect(createCallback).not.toHaveBeenCalled();
 		});
 
 		it('should call createCallback if file exists but json is not valid', () => {
@@ -83,8 +83,8 @@ describe('src/lib/jsonLib', () => {
 
 			original.getJSON(filename, createCallback, validateCallback);
 
-			expect(jsonLib.readJSON).toBeCalledWith(filename);
-			expect(createCallback).toBeCalledWith();
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(filename);
+			expect(createCallback).toHaveBeenCalledWith();
 		});
 
 		it('should call createCallback if file not exists', () => {
@@ -92,8 +92,8 @@ describe('src/lib/jsonLib', () => {
 
 			original.getJSON(filename, createCallback, validateCallback);
 
-			expect(jsonLib.readJSON).not.toBeCalled();
-			expect(createCallback).toBeCalledWith();
+			expect(jsonLib.readJSON).not.toHaveBeenCalled();
+			expect(createCallback).toHaveBeenCalledWith();
 		});
 
 		it('should not write fallback JSON back if file exists and json is valid', () => {
@@ -102,7 +102,7 @@ describe('src/lib/jsonLib', () => {
 
 			original.getJSON(filename, createCallback, validateCallback);
 
-			expect(jsonLib.writeJSON).not.toBeCalled();
+			expect(jsonLib.writeJSON).not.toHaveBeenCalled();
 		});
 
 		it('should write fallback JSON back if file exists but json is not valid', () => {
@@ -111,9 +111,9 @@ describe('src/lib/jsonLib', () => {
 
 			original.getJSON(filename, createCallback, validateCallback);
 
-			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
-			expect(paths.ensureFile).toBeCalledWith(filename);
-			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(jsonLib.checkJSON).toHaveBeenCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toHaveBeenCalledWith(filename);
+			expect(jsonLib.writeJSON).toHaveBeenCalledWith(filename, fallbackJSON);
 		});
 
 		it('should write fallback JSON back if file not exists', () => {
@@ -121,9 +121,9 @@ describe('src/lib/jsonLib', () => {
 
 			original.getJSON(filename, createCallback, validateCallback);
 
-			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
-			expect(paths.ensureFile).toBeCalledWith(filename);
-			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(jsonLib.checkJSON).toHaveBeenCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toHaveBeenCalledWith(filename);
+			expect(jsonLib.writeJSON).toHaveBeenCalledWith(filename, fallbackJSON);
 		});
 
 		it('should return JSON if file exists and json is valid', () => {
@@ -160,8 +160,8 @@ describe('src/lib/jsonLib', () => {
 
 			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
-			expect(jsonLib.readJSON).toBeCalledWith(filename);
-			expect(createCallbackAsync).not.toBeCalled();
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(filename);
+			expect(createCallbackAsync).not.toHaveBeenCalled();
 		});
 
 		it('should call createCallback if file exists but json is not valid', async () => {
@@ -170,8 +170,8 @@ describe('src/lib/jsonLib', () => {
 
 			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
-			expect(jsonLib.readJSON).toBeCalledWith(filename);
-			expect(createCallbackAsync).toBeCalledWith();
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(filename);
+			expect(createCallbackAsync).toHaveBeenCalledWith();
 		});
 
 		it('should call createCallback if file not exists', async () => {
@@ -179,8 +179,8 @@ describe('src/lib/jsonLib', () => {
 
 			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
-			expect(jsonLib.readJSON).not.toBeCalled();
-			expect(createCallbackAsync).toBeCalledWith();
+			expect(jsonLib.readJSON).not.toHaveBeenCalled();
+			expect(createCallbackAsync).toHaveBeenCalledWith();
 		});
 
 		it('should not write fallback JSON back if file exists and json is valid', async () => {
@@ -189,7 +189,7 @@ describe('src/lib/jsonLib', () => {
 
 			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
-			expect(jsonLib.writeJSON).not.toBeCalled();
+			expect(jsonLib.writeJSON).not.toHaveBeenCalled();
 		});
 
 		it('should write fallback JSON back if file exists but json is not valid', async () => {
@@ -198,9 +198,9 @@ describe('src/lib/jsonLib', () => {
 
 			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
-			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
-			expect(paths.ensureFile).toBeCalledWith(filename);
-			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(jsonLib.checkJSON).toHaveBeenCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toHaveBeenCalledWith(filename);
+			expect(jsonLib.writeJSON).toHaveBeenCalledWith(filename, fallbackJSON);
 		});
 
 		it('should write fallback JSON back if file not exists', async () => {
@@ -208,9 +208,9 @@ describe('src/lib/jsonLib', () => {
 
 			await original.getJSONAsync(filename, createCallbackAsync, validateCallbackAsync);
 
-			expect(jsonLib.checkJSON).toBeCalledWith(filename, fallbackJSON);
-			expect(paths.ensureFile).toBeCalledWith(filename);
-			expect(jsonLib.writeJSON).toBeCalledWith(filename, fallbackJSON);
+			expect(jsonLib.checkJSON).toHaveBeenCalledWith(filename, fallbackJSON);
+			expect(paths.ensureFile).toHaveBeenCalledWith(filename);
+			expect(jsonLib.writeJSON).toHaveBeenCalledWith(filename, fallbackJSON);
 		});
 
 		it('should return JSON if file exists and json is valid', async () => {

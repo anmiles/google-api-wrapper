@@ -42,7 +42,7 @@ describe('src/lib/paths', () => {
 
 			original.ensureDir(dirPath);
 
-			expect(fs.mkdirSync).toBeCalledWith(dirPath, { recursive : true });
+			expect(fs.mkdirSync).toHaveBeenCalledWith(dirPath, { recursive : true });
 		});
 
 		it('should not create empty dir if already exists', () => {
@@ -50,7 +50,7 @@ describe('src/lib/paths', () => {
 
 			original.ensureDir(dirPath);
 
-			expect(fs.writeFileSync).not.toBeCalled();
+			expect(fs.writeFileSync).not.toHaveBeenCalled();
 		});
 
 		it('should return dirPath', () => {
@@ -66,7 +66,7 @@ describe('src/lib/paths', () => {
 
 			original.ensureFile(filePath);
 
-			expect(paths.ensureDir).toBeCalledWith('parentDir');
+			expect(paths.ensureDir).toHaveBeenCalledWith('parentDir');
 		});
 
 		it('should create empty file if not exists', () => {
@@ -74,7 +74,7 @@ describe('src/lib/paths', () => {
 
 			original.ensureFile(filePath);
 
-			expect(fs.writeFileSync).toBeCalledWith(filePath, '');
+			expect(fs.writeFileSync).toHaveBeenCalledWith(filePath, '');
 		});
 
 		it('should not create empty file if already exists', () => {
@@ -82,7 +82,7 @@ describe('src/lib/paths', () => {
 
 			original.ensureFile(filePath);
 
-			expect(fs.writeFileSync).not.toBeCalled();
+			expect(fs.writeFileSync).not.toHaveBeenCalled();
 		});
 
 		it('should return filePath', () => {

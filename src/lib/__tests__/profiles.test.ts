@@ -56,7 +56,7 @@ describe('src/lib/profiles', () => {
 		it('should get json from profiles file', () => {
 			original.getProfiles();
 
-			expect(getJSONSpy).toBeCalled();
+			expect(getJSONSpy).toHaveBeenCalled();
 			expect(getJSONSpy.mock.calls[0][0]).toEqual(profilesFile);
 		});
 
@@ -79,7 +79,7 @@ describe('src/lib/profiles', () => {
 		it('should write json to profiles file', () => {
 			original.setProfiles(allProfiles);
 
-			expect(jsonLib.writeJSON).toBeCalledWith(profilesFile, allProfiles);
+			expect(jsonLib.writeJSON).toHaveBeenCalledWith(profilesFile, allProfiles);
 		});
 	});
 
@@ -95,7 +95,7 @@ describe('src/lib/profiles', () => {
 
 			original.createProfile(newProfile);
 
-			expect(profiles.getProfiles).toBeCalledWith();
+			expect(profiles.getProfiles).toHaveBeenCalledWith();
 		});
 
 		it('should not save profiles if profile already exists', () => {
@@ -103,7 +103,7 @@ describe('src/lib/profiles', () => {
 
 			original.createProfile(newProfile);
 
-			expect(profiles.setProfiles).not.toBeCalled();
+			expect(profiles.setProfiles).not.toHaveBeenCalled();
 		});
 
 		it('should add new profile if not exists', () => {
@@ -111,7 +111,7 @@ describe('src/lib/profiles', () => {
 
 			original.createProfile(newProfile);
 
-			expect(profiles.setProfiles).toBeCalledWith([ 'username1', 'username2', 'newProfile' ]);
+			expect(profiles.setProfiles).toHaveBeenCalledWith([ 'username1', 'username2', 'newProfile' ]);
 		});
 	});
 });

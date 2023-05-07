@@ -161,7 +161,7 @@ describe('src/lib/secrets', () => {
 		it('should get json from scopes file', async () => {
 			await original.getScopes();
 
-			expect(getJSONSpy).toBeCalled();
+			expect(getJSONSpy).toHaveBeenCalled();
 			expect(getJSONSpy.mock.calls[0][0]).toEqual(scopesFile);
 		});
 
@@ -188,7 +188,7 @@ describe('src/lib/secrets', () => {
 		it('should get json from secrets file', async () => {
 			await original.getSecrets(profile);
 
-			expect(getJSONSpy).toBeCalled();
+			expect(getJSONSpy).toHaveBeenCalled();
 			expect(getJSONSpy.mock.calls[0][0]).toEqual(secretsFile);
 		});
 
@@ -201,7 +201,7 @@ describe('src/lib/secrets', () => {
 		it('should check secrets', async () => {
 			await original.getSecrets(profile);
 
-			expect(secrets.checkSecrets).toBeCalledWith(profile, json, secretsFile);
+			expect(secrets.checkSecrets).toHaveBeenCalledWith(profile, json, secretsFile);
 		});
 
 		it('should return secrets', async () => {
@@ -222,21 +222,21 @@ describe('src/lib/secrets', () => {
 		it('should get json from credentials file by default', async () => {
 			await original.getCredentials(profile, auth);
 
-			expect(getJSONAsyncSpy).toBeCalled();
+			expect(getJSONAsyncSpy).toHaveBeenCalled();
 			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
 		});
 
 		it('should get json from credentials file if temporariness not set', async () => {
 			await original.getCredentials(profile, auth, { temporary : false });
 
-			expect(getJSONAsyncSpy).toBeCalled();
+			expect(getJSONAsyncSpy).toHaveBeenCalled();
 			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
 		});
 
 		it('should not get json from credentials file if temporariness set', async () => {
 			await original.getCredentials(profile, auth, { temporary : true });
 
-			expect(getJSONAsyncSpy).not.toBeCalled();
+			expect(getJSONAsyncSpy).not.toHaveBeenCalled();
 		});
 
 		it('should call createCredentials with consent in fallback if no existing credentials', async () => {
@@ -244,13 +244,13 @@ describe('src/lib/secrets', () => {
 
 			await original.getCredentials(profile, auth);
 
-			expect(secrets.createCredentials).not.toBeCalled();
+			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			const result   = await fallback();
 
-			expect(jsonLib.readJSON).not.toBeCalled();
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth, undefined, 'consent');
+			expect(jsonLib.readJSON).not.toHaveBeenCalled();
+			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, 'consent');
 			expect(result).toEqual(credentialsJSON);
 		});
 
@@ -259,13 +259,13 @@ describe('src/lib/secrets', () => {
 
 			await original.getCredentials(profile, auth, { temporary : false });
 
-			expect(secrets.createCredentials).not.toBeCalled();
+			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			const result   = await fallback();
 
-			expect(jsonLib.readJSON).not.toBeCalled();
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth, { temporary : false }, 'consent');
+			expect(jsonLib.readJSON).not.toHaveBeenCalled();
+			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, { temporary : false }, 'consent');
 			expect(result).toEqual(credentialsJSON);
 		});
 
@@ -274,13 +274,13 @@ describe('src/lib/secrets', () => {
 
 			await original.getCredentials(profile, auth);
 
-			expect(secrets.createCredentials).not.toBeCalled();
+			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			const result   = await fallback();
 
-			expect(jsonLib.readJSON).toBeCalledWith(credentialsFile);
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth, undefined, 'consent');
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(credentialsFile);
+			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, 'consent');
 			expect(result).toEqual(credentialsJSON);
 		});
 
@@ -291,13 +291,13 @@ describe('src/lib/secrets', () => {
 
 			await original.getCredentials(profile, auth);
 
-			expect(secrets.createCredentials).not.toBeCalled();
+			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			const result   = await fallback();
 
-			expect(jsonLib.readJSON).toBeCalledWith(credentialsFile);
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth, undefined, undefined);
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(credentialsFile);
+			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, undefined);
 			// eslint-disable-next-line camelcase
 			expect(result).toEqual({ ... credentialsJSON, refresh_token : 'refresh_token' });
 		});
@@ -314,8 +314,8 @@ describe('src/lib/secrets', () => {
 			const fallback = getJSONAsyncSpy.mock.calls[0][1];
 			const result   = await fallback();
 
-			expect(jsonLib.readJSON).toBeCalledWith(credentialsFile);
-			expect(secrets.createCredentials).toBeCalledWith(profile, auth, undefined, undefined);
+			expect(jsonLib.readJSON).toHaveBeenCalledWith(credentialsFile);
+			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, undefined);
 			// eslint-disable-next-line camelcase
 			expect(result).toEqual({ ...credentialsJSON, refresh_token : 'refresh_token_exists' });
 		});
@@ -359,7 +359,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(auth.generateAuthUrl).toBeCalledWith({
+			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
 				// eslint-disable-next-line camelcase
 				access_type : 'offline',
 				prompt      : undefined,
@@ -375,7 +375,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth, { temporary : true }, 'consent');
 
-			expect(auth.generateAuthUrl).toBeCalledWith({
+			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
 				// eslint-disable-next-line camelcase
 				access_type : 'offline',
 				prompt      : 'consent',
@@ -391,7 +391,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
 
-			expect(auth.generateAuthUrl).toBeCalledWith({
+			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
 				// eslint-disable-next-line camelcase
 				access_type : 'offline',
 				prompt      : undefined,
@@ -404,8 +404,8 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(http.createServer).toBeCalled();
-			expect(listen).toBeCalledWith(6006);
+			expect(http.createServer).toHaveBeenCalled();
+			expect(listen).toHaveBeenCalledWith(6006);
 		});
 
 		it('should open browser page and warn about it', async () => {
@@ -413,8 +413,8 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(open).toBeCalledWith('http://localhost:6006/');
-			expect(logger.warn).toBeCalledWith('Please check your browser for further actions');
+			expect(open).toHaveBeenCalledWith('http://localhost:6006/');
+			expect(logger.warn).toHaveBeenCalledWith('Please check your browser for further actions');
 		});
 
 		it('should show nothing on the browser page if request.url is empty', async () => {
@@ -423,7 +423,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith('');
+			expect(response.end).toHaveBeenCalledWith('');
 		});
 
 		it('should show opening instructions if opened the home page', async () => {
@@ -432,7 +432,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith(`\
+			expect(response.end).toHaveBeenCalledWith(`\
 <div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
 <div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
 <p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p>\n\
@@ -447,7 +447,7 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(response.end).toBeCalledWith('\
+			expect(response.end).toHaveBeenCalledWith('\
 <div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
 <div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
 <p>Please close this page and return to application</p>\n\
@@ -460,9 +460,9 @@ describe('src/lib/secrets', () => {
 
 			await original.createCredentials(profile, auth);
 
-			expect(close).toBeCalled();
+			expect(close).toHaveBeenCalled();
 
-			connections.forEach((connection) => expect(connection.destroy).toBeCalled());
+			connections.forEach((connection) => expect(connection.destroy).toHaveBeenCalled());
 		});
 
 		it('should only resolve when request.url is truthy', async () => {
@@ -476,7 +476,7 @@ describe('src/lib/secrets', () => {
 			const result = await original.createCredentials(profile, auth);
 			const after  = new Date().getTime();
 
-			expect(close).toBeCalledTimes(1);
+			expect(close).toHaveBeenCalledTimes(1);
 			expect(closedTime - before).toBeGreaterThanOrEqual(requestTime - 1);
 			expect(after - before).toBeGreaterThanOrEqual(requestTime - 1);
 			expect(result).toEqual(credentialsJSON);
@@ -493,7 +493,7 @@ describe('src/lib/secrets', () => {
 			const result = await original.createCredentials(profile, auth);
 			const after  = new Date().getTime();
 
-			expect(close).toBeCalledTimes(1);
+			expect(close).toHaveBeenCalledTimes(1);
 			expect(closedTime - before).toBeGreaterThanOrEqual(requestTime - 1);
 			expect(after - before).toBeGreaterThanOrEqual(requestTime - 1);
 			expect(result).toEqual(credentialsJSON);

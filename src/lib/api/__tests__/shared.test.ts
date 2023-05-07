@@ -60,30 +60,30 @@ describe('src/lib/api/shared', () => {
 			await original.getItems(api, args);
 
 			pageTokens.forEach((pageToken) => {
-				expect(api.list).toBeCalledWith({ ...args, pageToken });
+				expect(api.list).toHaveBeenCalledWith({ ...args, pageToken });
 			});
 		});
 
 		it('should output progress by default', async () => {
 			await original.getItems(api, args);
 
-			expect(logger.log).toBeCalledTimes(response.length);
-			expect(logger.log).toBeCalledWith('Getting items (2 of 4)...');
-			expect(logger.log).toBeCalledWith('Getting items (2 of many)...');
-			expect(logger.log).toBeCalledWith('Getting items (4 of 4)...');
+			expect(logger.log).toHaveBeenCalledTimes(response.length);
+			expect(logger.log).toHaveBeenCalledWith('Getting items (2 of 4)...');
+			expect(logger.log).toHaveBeenCalledWith('Getting items (2 of many)...');
+			expect(logger.log).toHaveBeenCalledWith('Getting items (4 of 4)...');
 		});
 
 		it('should not output progress if hidden', async () => {
 			await original.getItems(api, args, { hideProgress : true });
 
-			expect(logger.log).not.toBeCalled();
+			expect(logger.log).not.toHaveBeenCalled();
 		});
 
 		it('should sleep after reach request', async () => {
 			await original.getItems(api, args);
 
-			expect(sleep.sleep).toBeCalledTimes(response.length);
-			expect(sleep.sleep).toBeCalledWith(300);
+			expect(sleep.sleep).toHaveBeenCalledTimes(response.length);
+			expect(sleep.sleep).toHaveBeenCalledWith(300);
 		});
 
 		it('should return items data', async () => {
