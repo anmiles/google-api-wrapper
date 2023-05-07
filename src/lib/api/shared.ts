@@ -1,6 +1,6 @@
 import type GoogleApis from 'googleapis';
+import { log } from '@anmiles/logger';
 import type { CommonOptions } from '../../types';
-import { log } from '../logger';
 import { sleep } from '../sleep';
 
 export { getItems };

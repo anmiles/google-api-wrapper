@@ -2,9 +2,9 @@ import http from 'http';
 import enableDestroy from 'server-destroy';
 import open from 'open';
 import type GoogleApis from 'googleapis';
+import { warn } from '@anmiles/logger';
 import type { Secrets, AuthOptions } from '../types';
 import { getJSON, getJSONAsync, readJSON } from './jsonLib';
-import { warn, error } from './logger';
 import { getScopesFile, getSecretsFile, getCredentialsFile, ensureFile } from './paths';
 
 import secrets from './secrets';
@@ -19,13 +19,17 @@ const tokenExpiration = 7 * 24 * 60 * 60 * 1000;
 
 function getScopes(): string[] {
 	const scopesFile = getScopesFile();
-	const scopes     = getJSON<string[]>(scopesFile, () => error(secrets.getScopesError(scopesFile)) as never);
+	const scopes     = getJSON<string[]>(scopesFile, () => {
+		throw secrets.getScopesError(scopesFile);
+	});
 	return scopes;
 }
 
 function getSecrets(profile: string): Secrets {
 	const secretsFile   = getSecretsFile(profile);
-	const secretsObject = getJSON<Secrets>(secretsFile, () => error(secrets.getSecretsError(profile, secretsFile)) as never);
+	const secretsObject = getJSON<Secrets>(secretsFile, () => {
+		throw secrets.getSecretsError(profile, secretsFile);
+	});
 	secrets.checkSecrets(profile, secretsObject, secretsFile);
 	return secretsObject;
 }
@@ -116,7 +120,7 @@ function checkSecrets(profile: string, secretsObject: Secrets, secretsFile: stri
 	if (secretsObject.web.redirect_uris[0] === callbackURI) {
 		return true;
 	}
-	error(`Error in credentials file: redirect URI should be ${callbackURI}.\n${secrets.getSecretsError(profile, secretsFile)}`);
+	throw `Error in credentials file: redirect URI should be ${callbackURI}.\n${secrets.getSecretsError(profile, secretsFile)}`;
 }
 
 function getScopesError(scopesFile: string) {

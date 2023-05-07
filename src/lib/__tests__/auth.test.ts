@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
-import logger from '../logger';
+import logger from '@anmiles/logger';
 import profiles from '../profiles';
 import secrets from '../secrets';
 
@@ -11,7 +11,7 @@ jest.mock<typeof auth>('../auth', () => ({
 	getAuth : jest.fn().mockImplementation(async () => googleAuth),
 }));
 
-jest.mock<Partial<typeof logger>>('../logger', () => ({
+jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
 	info : jest.fn(),
 	warn : jest.fn(),
 }));

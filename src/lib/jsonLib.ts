@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { error } from './logger';
 import { ensureFile } from './paths';
 
 import jsonLib from './jsonLib';
@@ -53,5 +52,6 @@ function checkJSON<T>(filename: string, json: T): void {
 	if (json) {
 		return;
 	}
-	error(`File ${filename} doesn't exist and should be created with initial data, but function createCallback returned nothing`);
+
+	throw `File ${filename} doesn't exist and should be created with initial data, but function createCallback returned nothing`;
 }

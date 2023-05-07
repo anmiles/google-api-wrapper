@@ -1,5 +1,4 @@
 import fs from 'fs';
-import logger from '../logger';
 import paths from '../paths';
 
 import jsonLib from '../jsonLib';
@@ -16,12 +15,6 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 	readFileSync  : jest.fn().mockImplementation(() => jsonString),
 	writeFileSync : jest.fn(),
 	existsSync    : jest.fn().mockImplementation(() => fileExists),
-}));
-
-jest.mock<Partial<typeof logger>>('../logger', () => ({
-	error : jest.fn().mockImplementation((error) => {
-		throw error;
-	}) as jest.Mock<never, any>,
 }));
 
 jest.mock<Partial<typeof paths>>('../paths', () => ({
@@ -241,13 +234,12 @@ describe('src/lib/jsonLib', () => {
 	});
 
 	describe('checkJSON', () => {
-		it('should do nothing if json is truthy', () => {
-			original.checkJSON(filename, json);
-
-			expect(logger.error).not.toBeCalled();
-		});
 		it('should output error if json is falsy', () => {
-			expect(() => original.checkJSON(filename, '')).toThrowError(`File ${filename} doesn't exist and should be created with initial data, but function createCallback returned nothing`);
+			expect(() => original.checkJSON(filename, '')).toThrow(`File ${filename} doesn't exist and should be created with initial data, but function createCallback returned nothing`);
+		});
+
+		it('should do nothing if json is truthy', () => {
+			expect(() => original.checkJSON(filename, json)).not.toThrow();
 		});
 	});
 });

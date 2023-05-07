@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
+import { info, warn } from '@anmiles/logger';
 import type { CommonOptions, AuthOptions } from '../types';
-import { info, warn } from './logger';
 import { getProfiles } from './profiles';
 import { getCredentials, getSecrets } from './secrets';
 

@@ -1,6 +1,6 @@
 import fs from 'fs';
+import logger from '@anmiles/logger';
 import jsonLib from '../jsonLib';
-import logger from '../logger';
 import paths from '../paths';
 
 import profiles from '../profiles';
@@ -23,12 +23,9 @@ jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
 	writeJSON : jest.fn(),
 }));
 
-jest.mock<Partial<typeof logger>>('../logger', () => ({
-	log   : jest.fn(),
-	warn  : jest.fn(),
-	error : jest.fn().mockImplementation((error) => {
-		throw error;
-	}) as jest.Mock<never, any>,
+jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
+	log  : jest.fn(),
+	warn : jest.fn(),
 }));
 
 jest.mock<Partial<typeof paths>>('../paths', () => ({
@@ -87,7 +84,7 @@ describe('src/lib/profiles', () => {
 		it('should output error and do nothing if profile is falsy', () => {
 			const func = () => original.createProfile('');
 
-			expect(func).toThrowError('Usage: `npm run create <profile>` where `profile` - is any profile name you want');
+			expect(func).toThrow('Usage: `npm run create <profile>` where `profile` - is any profile name you want');
 		});
 
 		it('should get profiles', () => {

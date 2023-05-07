@@ -1,5 +1,4 @@
 import { getJSON, writeJSON } from './jsonLib';
-import { error } from './logger';
 import { getProfilesFile } from './paths';
 
 import profiles from './profiles';
@@ -19,7 +18,7 @@ function setProfiles(profiles: string[]): void {
 
 function createProfile(profile: string): void {
 	if (!profile) {
-		error('Usage: `npm run create <profile>` where `profile` - is any profile name you want');
+		throw 'Usage: `npm run create <profile>` where `profile` - is any profile name you want';
 	}
 
 	const existingProfiles = profiles.getProfiles();

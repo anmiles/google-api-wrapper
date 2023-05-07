@@ -1,4 +1,4 @@
-import logger from '../../logger';
+import logger from '@anmiles/logger';
 import sleep from '../../sleep';
 import shared from '../shared';
 
@@ -7,7 +7,7 @@ jest.mock<Partial<typeof shared>>('../shared', () => ({
 	getItems : jest.fn().mockImplementation(async () => items),
 }));
 
-jest.mock<Partial<typeof logger>>('../../logger', () => ({
+jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
 	log : jest.fn(),
 }));
 

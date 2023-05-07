@@ -1,10 +1,9 @@
 import http from 'http';
 import path from 'path';
-import * as colorette from 'colorette';
 import open from 'open';
 import type GoogleApis from 'googleapis';
+import logger from '@anmiles/logger';
 import jsonLib from '../jsonLib';
-import logger from '../logger';
 import paths from '../paths';
 import type { Secrets } from '../../types';
 
@@ -38,10 +37,6 @@ jest.mock<Partial<typeof path>>('path', () => ({
 	join : jest.fn().mockImplementation((...args) => args.join('/')),
 }));
 
-jest.mock<Partial<typeof colorette>>('colorette', () => ({
-	yellow : jest.fn().mockImplementation((text) => `yellow:${text}`),
-}));
-
 jest.mock('open', () => jest.fn().mockImplementation((url: string) => {
 	willOpen(url.replace('http://localhost:6006', ''));
 }));
@@ -52,11 +47,8 @@ jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
 	readJSON     : jest.fn().mockImplementation(async () => json),
 }));
 
-jest.mock<Partial<typeof logger>>('../logger', () => ({
-	warn  : jest.fn(),
-	error : jest.fn().mockImplementation((error) => {
-		throw error;
-	}) as jest.Mock<never, any>,
+jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
+	warn : jest.fn(),
 }));
 
 jest.mock<Partial<typeof paths>>('../paths', () => ({
@@ -168,7 +160,7 @@ describe('src/lib/secrets', () => {
 		it('should fallback to error', async () => {
 			await original.getScopes();
 
-			expect(getJSONSpy.mock.calls[0][1]).toThrowError(scopesError);
+			expect(getJSONSpy.mock.calls[0][1]).toThrow(scopesError);
 		});
 
 		it('should return scopes', async () => {
@@ -195,7 +187,7 @@ describe('src/lib/secrets', () => {
 		it('should fallback to error', async () => {
 			await original.getSecrets(profile);
 
-			expect(getJSONSpy.mock.calls[0][1]).toThrowError(secretsError);
+			expect(getJSONSpy.mock.calls[0][1]).toThrow(secretsError);
 		});
 
 		it('should check secrets', async () => {
@@ -520,7 +512,7 @@ describe('src/lib/secrets', () => {
 			wrongSecretsJSON.web.redirect_uris[0] = wrongRedirectURI;
 			const func                            = () => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
 
-			expect(func).toThrowError('Error in credentials file: redirect URI should be http://localhost:6006/oauthcallback.\nsecretsError');
+			expect(func).toThrow('Error in credentials file: redirect URI should be http://localhost:6006/oauthcallback.\nsecretsError');
 		});
 	});
 
