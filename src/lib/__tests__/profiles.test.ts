@@ -1,6 +1,5 @@
 import fs from 'fs';
 import logger from '@anmiles/logger';
-import jsonLib from '../jsonLib';
 import paths from '../paths';
 
 import profiles from '../profiles';
@@ -16,11 +15,6 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 	renameSync    : jest.fn(),
 	writeFileSync : jest.fn(),
 	existsSync    : jest.fn().mockImplementation((file) => existingFiles.includes(file)),
-}));
-
-jest.mock<Partial<typeof jsonLib>>('../jsonLib', () => ({
-	getJSON   : jest.fn().mockImplementation(() => json),
-	writeJSON : jest.fn(),
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
@@ -41,15 +35,28 @@ const allProfiles      = [ profile1, profile2 ];
 
 let existingFiles: string[] = [];
 
+let getJSONSpy: jest.SpyInstance;
+let writeJSONSpy: jest.SpyInstance;
+
+beforeAll(() => {
+	getJSONSpy   = jest.spyOn(fs, 'getJSON');
+	writeJSONSpy = jest.spyOn(fs, 'writeJSON');
+});
+
 beforeEach(() => {
+	getJSONSpy.mockImplementation(() => json);
+	writeJSONSpy.mockImplementation();
 	existingFiles = [];
+});
+
+afterAll(() => {
+	getJSONSpy.mockRestore();
+	writeJSONSpy.mockRestore();
 });
 
 describe('src/lib/profiles', () => {
 
 	describe('getProfiles', () => {
-		const getJSONSpy = jest.spyOn(jsonLib, 'getJSON');
-
 		it('should get json from profiles file', () => {
 			original.getProfiles();
 
@@ -76,7 +83,7 @@ describe('src/lib/profiles', () => {
 		it('should write json to profiles file', () => {
 			original.setProfiles(allProfiles);
 
-			expect(jsonLib.writeJSON).toHaveBeenCalledWith(profilesFile, allProfiles);
+			expect(writeJSONSpy).toHaveBeenCalledWith(profilesFile, allProfiles);
 		});
 	});
 

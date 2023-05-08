@@ -1,11 +1,12 @@
+import fs from 'fs';
 import http from 'http';
 import enableDestroy from 'server-destroy';
 import open from 'open';
 import type GoogleApis from 'googleapis';
 import { warn } from '@anmiles/logger';
 import type { Secrets, AuthOptions } from '../types';
-import { getJSON, getJSONAsync, readJSON } from './jsonLib';
-import { getScopesFile, getSecretsFile, getCredentialsFile, ensureFile } from './paths';
+import '@anmiles/prototypes';
+import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
 
 import secrets from './secrets';
 
@@ -19,7 +20,7 @@ const tokenExpiration = 7 * 24 * 60 * 60 * 1000;
 
 function getScopes(): string[] {
 	const scopesFile = getScopesFile();
-	const scopes     = getJSON<string[]>(scopesFile, () => {
+	const scopes     = fs.getJSON<string[]>(scopesFile, () => {
 		throw secrets.getScopesError(scopesFile);
 	});
 	return scopes;
@@ -27,7 +28,7 @@ function getScopes(): string[] {
 
 function getSecrets(profile: string): Secrets {
 	const secretsFile   = getSecretsFile(profile);
-	const secretsObject = getJSON<Secrets>(secretsFile, () => {
+	const secretsObject = fs.getJSON<Secrets>(secretsFile, () => {
 		throw secrets.getSecretsError(profile, secretsFile);
 	});
 	secrets.checkSecrets(profile, secretsObject, secretsFile);
@@ -41,30 +42,32 @@ async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Cli
 		return secrets.createCredentials(profile, auth, options);
 	}
 
-	return getJSONAsync(credentialsFile, async () => {
+	return fs.getJSONAsync(credentialsFile, async () => {
+		const refreshToken = fs.existsSync(credentialsFile) ? fs.readJSON<GoogleApis.Auth.Credentials>(credentialsFile).refresh_token : undefined;
+		const credentials  = await secrets.createCredentials(profile, auth, options, refreshToken ? undefined : 'consent');
 		// eslint-disable-next-line camelcase
-		const refresh_token = ensureFile(credentialsFile) ? readJSON<GoogleApis.Auth.Credentials>(credentialsFile).refresh_token : undefined;
-		// eslint-disable-next-line camelcase
-		const credentials = await secrets.createCredentials(profile, auth, options, refresh_token ? undefined : 'consent');
-		// eslint-disable-next-line camelcase
-		return { refresh_token, ...credentials };
+		return { refresh_token : refreshToken, ...credentials };
 	}, secrets.validateCredentials);
 }
 
-async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Promise<boolean> {
+async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Promise<{ isValid: boolean, validationError?: string}> {
 	if (!credentials.access_token) {
-		return false;
+		return { isValid : false, validationError : 'Credentials does not have access_token' };
 	}
 
 	if (!credentials.refresh_token) {
-		return false;
+		return { isValid : false, validationError : 'Credentials does not have refresh_token' };
 	}
 
 	if (!credentials.expiry_date) {
-		return true;
+		return { isValid : false, validationError : 'Credentials does not have expiry_date' };
 	}
 
-	return new Date().getTime() - credentials.expiry_date < tokenExpiration;
+	if (new Date().getTime() - credentials.expiry_date >= tokenExpiration) {
+		return { isValid : false, validationError : 'Credentials expired' };
+	}
+
+	return { isValid : true };
 }
 
 async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client, options?: AuthOptions, prompt?: GoogleApis.Auth.GenerateAuthUrlOpts['prompt']): Promise<GoogleApis.Auth.Credentials> {

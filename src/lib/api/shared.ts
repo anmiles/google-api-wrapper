@@ -1,7 +1,7 @@
 import type GoogleApis from 'googleapis';
 import { log } from '@anmiles/logger';
+import sleep from '@anmiles/sleep';
 import type { CommonOptions } from '../../types';
-import { sleep } from '../sleep';
 
 export { getItems };
 export default { getItems };

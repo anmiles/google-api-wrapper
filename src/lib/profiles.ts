@@ -1,4 +1,5 @@
-import { getJSON, writeJSON } from './jsonLib';
+import fs from 'fs';
+import '@anmiles/prototypes';
 import { getProfilesFile } from './paths';
 
 import profiles from './profiles';
@@ -8,12 +9,12 @@ export default { getProfiles, setProfiles, createProfile };
 
 function getProfiles(): string[] {
 	const profilesFile = getProfilesFile();
-	return getJSON(profilesFile, () => []);
+	return fs.getJSON(profilesFile, () => []);
 }
 
 function setProfiles(profiles: string[]): void {
 	const profilesFile = getProfilesFile();
-	writeJSON(profilesFile, profiles);
+	fs.writeJSON(profilesFile, profiles);
 }
 
 function createProfile(profile: string): void {

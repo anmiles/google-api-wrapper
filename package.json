@@ -30,6 +30,8 @@
   },
   "dependencies": {
     "@anmiles/logger": "^2.1.2",
+    "@anmiles/prototypes": "^2.0.0",
+    "@anmiles/sleep": "^1.0.2",
     "execa": "^5.1.1",
     "googleapis": "^118.0.0",
     "open": "^8.4.2",

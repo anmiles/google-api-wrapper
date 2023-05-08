@@ -1,5 +1,5 @@
 import logger from '@anmiles/logger';
-import sleep from '../../sleep';
+import sleep from '@anmiles/sleep';
 import shared from '../shared';
 
 const original = jest.requireActual('../shared').default as typeof shared;
@@ -11,9 +11,7 @@ jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
 	log : jest.fn(),
 }));
 
-jest.mock<Partial<typeof sleep>>('../../sleep', () => ({
-	sleep : jest.fn(),
-}));
+jest.mock<Partial<typeof sleep>>('@anmiles/sleep', () => jest.fn());
 
 const items: Array<{ data: string}> = [
 	{ data : 'first' },
@@ -82,8 +80,8 @@ describe('src/lib/api/shared', () => {
 		it('should sleep after reach request', async () => {
 			await original.getItems(api, args);
 
-			expect(sleep.sleep).toHaveBeenCalledTimes(response.length);
-			expect(sleep.sleep).toHaveBeenCalledWith(300);
+			expect(sleep).toHaveBeenCalledTimes(response.length);
+			expect(sleep).toHaveBeenCalledWith(300);
 		});
 
 		it('should return items data', async () => {
