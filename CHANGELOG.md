@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.1.0](../../tags/v9.1.0) - 2023-05-26
+### Changed
+- Concurrent servers on the same port between different applications
+- Use `event-emitter` to mock subscriptions on server/response
+- Get rid of timeouts and promise races in tests
+
 ## [9.0.0](../../tags/v9.0.0) - 2023-05-15
 ### Changed
 - Update `@anmiles/logger` with breaking change (removing timestamps for colored logs)

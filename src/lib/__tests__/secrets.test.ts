@@ -4,6 +4,7 @@ import path from 'path';
 import open from 'open';
 import type GoogleApis from 'googleapis';
 import logger from '@anmiles/logger';
+import emitter from 'event-emitter';
 import paths from '../paths';
 import type { Secrets } from '../../types';
 import '@anmiles/prototypes';
@@ -22,17 +23,20 @@ jest.mock<typeof secrets>('../secrets', () => ({
 }));
 
 jest.mock<Partial<typeof http>>('http', () => ({
-	createServer : jest.fn().mockImplementation((callback) => {
-		serverCallback = callback;
-
-		return {
-			on,
-			listen,
-			close,
-			destroy,
-		};
-	}),
+	createServer : jest.fn().mockImplementation(() => server),
 }));
+
+let server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>;
+let response: http.ServerResponse;
+
+async function makeRequest(url: string | undefined) {
+	server.emit('request', {
+		url,
+		headers : {
+			host,
+		},
+	} as http.IncomingMessage, response);
+}
 
 jest.mock<Partial<typeof fs>>('fs', () => ({
 	existsSync : jest.fn().mockImplementation(() => exists),
@@ -43,7 +47,7 @@ jest.mock<Partial<typeof path>>('path', () => ({
 }));
 
 jest.mock('open', () => jest.fn().mockImplementation((url: string) => {
-	willOpen(url.replace('http://localhost:6006', ''));
+	makeRequest(url.replace('http://localhost:6006', ''));
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
@@ -55,6 +59,12 @@ jest.mock<Partial<typeof paths>>('../paths', () => ({
 	getSecretsFile     : jest.fn().mockImplementation(() => secretsFile),
 	getCredentialsFile : jest.fn().mockImplementation(() => credentialsFile),
 }));
+
+jest.useFakeTimers();
+
+const port        = 6006;
+const host        = `localhost:${port}`;
+const callbackURI = `http://${host}/oauthcallback`;
 
 const profile          = 'username1';
 const scopesFile       = 'scopes.json';
@@ -79,7 +89,7 @@ const secretsJSON: Secrets = {
 		token_uri                   : 'https://oauth2.googleapis.com/token',
 		auth_provider_x509_cert_url : 'https://www.googleapis.com/oauth2/v1/certs',
 		client_secret               : 'client_secret',
-		redirect_uris               : [ 'http://localhost:6006/oauthcallback' ],
+		redirect_uris               : [ callbackURI ],
 		/* eslint-enable camelcase */
 	},
 };
@@ -97,46 +107,6 @@ const auth    = {
 	generateAuthUrl : jest.fn().mockReturnValue(authUrl),
 	getToken        : jest.fn().mockResolvedValue({ tokens : credentialsJSON }),
 } as unknown as GoogleApis.Common.OAuth2Client;
-
-const response = {
-	end : jest.fn(),
-} as unknown as http.ServerResponse;
-
-let serverCallback: (
-	request: http.IncomingMessage,
-	response: http.ServerResponse
-) => Promise<typeof credentialsJSON>;
-
-function willOpen(url: string | undefined, timeout?: number) {
-	setTimeout(async () => {
-		await serverCallback({
-			url,
-			headers : {
-				host : 'localhost:6006',
-			},
-		} as http.IncomingMessage, response);
-	}, timeout || 0);
-}
-let closedTime: number;
-
-const on = jest.fn().mockImplementation((event: string, listener: (...args: any[]) => void) => {
-	if (event === 'connection') {
-		// always simulate opening several connections once connections are meant to be listened
-		connections.forEach((connection) => listener(connection));
-	}
-});
-
-const listen = jest.fn();
-const close  = jest.fn().mockImplementation(() => {
-	closedTime = new Date().getTime();
-});
-const destroy = jest.fn();
-
-const connections = [
-	{ remoteAddress : 'server', remotePort : '1001', on : jest.fn(), destroy : jest.fn() },
-	{ remoteAddress : 'server', remotePort : '1002', on : jest.fn(), destroy : jest.fn() },
-	{ remoteAddress : 'server', remotePort : '1003', on : jest.fn(), destroy : jest.fn() },
-];
 
 let exists: boolean;
 
@@ -360,10 +330,38 @@ describe('src/lib/secrets', () => {
 	describe('createCredentials', () => {
 		const tokenUrl = `/request.url?code=${code}`;
 
-		it('should generate authUrl', async () => {
-			willOpen(tokenUrl, 100);
+		const connections = [
+			{ remoteAddress : 'server', remotePort : '1001', on : jest.fn(), destroy : jest.fn() },
+			{ remoteAddress : 'server', remotePort : '1002', on : jest.fn(), destroy : jest.fn() },
+			{ remoteAddress : 'server', remotePort : '1003', on : jest.fn(), destroy : jest.fn() },
+		];
 
-			await original.createCredentials(profile, auth);
+		let endSpy: jest.SpyInstance;
+
+		beforeEach(() => {
+			server = emitter({
+				listen : jest.fn().mockImplementation(() => {
+					// always simulate opening several connections once connections are meant to be listened
+					connections.forEach((connection) => server.emit('connection', connection));
+				}),
+				close   : jest.fn(),
+				destroy : jest.fn(),
+			}) as typeof server;
+
+			response = emitter({
+				end : jest.fn(),
+			}) as typeof response;
+
+			endSpy = jest.spyOn(response, 'end');
+		});
+
+		afterAll(() => {
+			endSpy.mockRestore();
+		});
+
+		it('should generate authUrl', async () => {
+			original.createCredentials(profile, auth);
+			await Promise.resolve();
 
 			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
 				// eslint-disable-next-line camelcase
@@ -377,9 +375,8 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should generate authUrl and require consent if explicitly asked', async () => {
-			willOpen(tokenUrl, 100);
-
-			await original.createCredentials(profile, auth, { temporary : true }, 'consent');
+			original.createCredentials(profile, auth, { temporary : true }, 'consent');
+			await Promise.resolve();
 
 			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
 				// eslint-disable-next-line camelcase
@@ -393,9 +390,8 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should generate authUrl with custom scopes', async () => {
-			willOpen(tokenUrl, 100);
-
-			await original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
+			original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
+			await Promise.resolve();
 
 			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
 				// eslint-disable-next-line camelcase
@@ -406,39 +402,45 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should create server on 6006 port', async () => {
-			willOpen(tokenUrl, 100);
-
-			await original.createCredentials(profile, auth);
+			original.createCredentials(profile, auth);
+			await Promise.resolve();
 
 			expect(http.createServer).toHaveBeenCalled();
-			expect(listen).toHaveBeenCalledWith(6006);
+			expect(server.listen).toHaveBeenCalledWith(6006);
 		});
 
-		it('should open browser page and warn about it', async () => {
-			willOpen(tokenUrl, 100);
+		it('should open browser page and warn about it once listening', async () => {
+			original.createCredentials(profile, auth);
+			await Promise.resolve();
 
-			await original.createCredentials(profile, auth);
+			server.emit('listening');
 
 			expect(open).toHaveBeenCalledWith('http://localhost:6006/');
 			expect(logger.warn).toHaveBeenCalledWith('Please check your browser for further actions');
 		});
 
+		it('should not open browser page and warn about it until listening', async () => {
+			original.createCredentials(profile, auth);
+			await Promise.resolve();
+
+			expect(open).not.toHaveBeenCalled();
+			expect(logger.warn).not.toHaveBeenCalled();
+		});
+
 		it('should show nothing on the browser page if request.url is empty', async () => {
-			willOpen('', 100);
-			willOpen(tokenUrl, 200);
+			original.createCredentials(profile, auth);
+			makeRequest('');
+			await Promise.resolve();
 
-			await original.createCredentials(profile, auth);
-
-			expect(response.end).toHaveBeenCalledWith('');
+			expect(endSpy).toHaveBeenCalledWith('');
 		});
 
 		it('should show opening instructions if opened the home page', async () => {
-			willOpen('/', 100);
-			willOpen(tokenUrl, 200);
+			original.createCredentials(profile, auth);
+			makeRequest('/');
+			await Promise.resolve();
 
-			await original.createCredentials(profile, auth);
-
-			expect(response.end).toHaveBeenCalledWith(`\
+			expect(endSpy).toHaveBeenCalledWith(`\
 <div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
 <div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
 <p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p>\n\
@@ -449,11 +451,11 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should ask to close webpage', async () => {
-			willOpen(tokenUrl, 100);
+			original.createCredentials(profile, auth);
+			makeRequest(tokenUrl);
+			await Promise.resolve();
 
-			await original.createCredentials(profile, auth);
-
-			expect(response.end).toHaveBeenCalledWith('\
+			expect(endSpy).toHaveBeenCalledWith('\
 <div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
 <div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
 <p>Please close this page and return to application</p>\n\
@@ -462,53 +464,53 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should close server and destroy all connections if request.url is truthy', async () => {
-			willOpen(tokenUrl, 100);
+			original.createCredentials(profile, auth);
+			makeRequest(tokenUrl);
+			await Promise.resolve();
 
-			await original.createCredentials(profile, auth);
-
-			expect(close).toHaveBeenCalled();
+			expect(server.close).toHaveBeenCalled();
 
 			connections.forEach((connection) => expect(connection.destroy).toHaveBeenCalled());
 		});
 
-		it('should only resolve when request.url is truthy', async () => {
-			const emptyRequestTime = 100;
-			const requestTime      = 200;
-
-			const before = new Date().getTime();
-			willOpen(undefined, emptyRequestTime);
-			willOpen(tokenUrl, requestTime);
-
-			const result = await original.createCredentials(profile, auth);
-			const after  = new Date().getTime();
-
-			expect(close).toHaveBeenCalledTimes(1);
-			expect(closedTime - before).toBeGreaterThanOrEqual(requestTime - 1);
-			expect(after - before).toBeGreaterThanOrEqual(requestTime - 1);
+		it('should close server and resolve if request.url is truthy', async () => {
+			const promise = original.createCredentials(profile, auth);
+			makeRequest(tokenUrl);
+			const result = await Promise.resolve(promise);
 			expect(result).toEqual(credentialsJSON);
+			expect(server.close).toHaveBeenCalledTimes(1);
 		});
 
-		it('should only resolve when request.url contains no code', async () => {
-			const noCodeRequestTime = 100;
-			const requestTime       = 200;
+		it('should not close server if request.url is falsy', async () => {
+			original.createCredentials(profile, auth);
+			makeRequest(undefined);
+			await Promise.resolve();
 
-			const before = new Date().getTime();
-			willOpen('/request.url?param=value', noCodeRequestTime);
-			willOpen(tokenUrl, requestTime);
+			expect(server.close).not.toHaveBeenCalled();
+		});
 
-			const result = await original.createCredentials(profile, auth);
-			const after  = new Date().getTime();
+		it('should re-throw a server error if error is not EADDRINUSE', () => {
+			const error = { code : 'RANDOM', message : 'random error' } as NodeJS.ErrnoException;
 
-			expect(close).toHaveBeenCalledTimes(1);
-			expect(closedTime - before).toBeGreaterThanOrEqual(requestTime - 1);
-			expect(after - before).toBeGreaterThanOrEqual(requestTime - 1);
-			expect(result).toEqual(credentialsJSON);
+			original.createCredentials(profile, auth);
+			expect(() => server.emit('error', error)).toThrow(error.message);
+		});
+
+		it('should not re-throw a server error and try to listen again in 1000 seconds if error is EADDRINUSE', () => {
+			const error = { code : 'EADDRINUSE' } as NodeJS.ErrnoException;
+
+			original.createCredentials(profile, auth);
+			expect(server.listen).toHaveBeenCalledTimes(1);
+			expect(() => server.emit('error', error)).not.toThrow();
+			expect(server.listen).toHaveBeenCalledTimes(1);
+			jest.advanceTimersByTime(1000);
+			expect(server.listen).toHaveBeenCalledTimes(2);
 		});
 
 		it('should return credentials JSON', async () => {
-			willOpen(tokenUrl, 100);
-
-			const result = await original.createCredentials(profile, auth);
+			const promise = original.createCredentials(profile, auth);
+			makeRequest(tokenUrl);
+			const result = await promise;
 
 			expect(result).toEqual(credentialsJSON);
 		});

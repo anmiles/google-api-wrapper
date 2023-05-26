@@ -13,10 +13,12 @@ import secrets from './secrets';
 export { getSecrets, getCredentials };
 export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, checkSecrets, getSecretsError, getScopesError };
 
-const callbackPort    = 6006;
-const startURI        = `http://localhost:${callbackPort}/`;
-const callbackURI     = `http://localhost:${callbackPort}/oauthcallback`;
-const tokenExpiration = 7 * 24 * 60 * 60 * 1000;
+const port                = 6006;
+const host                = `localhost:${port}`;
+const startURI            = `http://${host}/`;
+const callbackURI         = `http://${host}/oauthcallback`;
+const tokenExpiration     = 7 * 24 * 60 * 60 * 1000;
+const serverRetryInterval = 1000;
 
 function getScopes(): string[] {
 	const scopesFile = getScopesFile();
@@ -81,7 +83,10 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 			scope,
 		});
 
-		const server = http.createServer(async (request, response) => {
+		const server = http.createServer();
+		enableDestroy(server);
+
+		server.on('request', async (request, response) => {
 			if (!request.url) {
 				response.end('');
 				return;
@@ -102,10 +107,20 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 			resolve(tokens);
 		});
 
-		enableDestroy(server);
-		server.listen(callbackPort);
-		warn('Please check your browser for further actions');
-		open(startURI);
+		server.on('error', (error: NodeJS.ErrnoException) => {
+			if (error.code === 'EADDRINUSE') {
+				setTimeout(() => server.listen(port), serverRetryInterval);
+			} else {
+				throw error;
+			}
+		});
+
+		server.once('listening', () => {
+			warn('Please check your browser for further actions');
+			open(startURI);
+		});
+
+		server.listen(port);
 	});
 }
 

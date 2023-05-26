@@ -10,4 +10,7 @@ module.exports = {
 		'input/',
 		'secrets/',
 	],
+	globals : {
+		NodeJS : true,
+	},
 };
