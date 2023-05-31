@@ -76,7 +76,10 @@ class API<TKey extends keyof typeof allAPIs> {
 	}
 
 	async revoke() {
-		deleteCredentials(this.profile);
+		if (!this.authOptions?.temporary) {
+			deleteCredentials(this.profile);
+		}
+
 		return this.auth.revokeCredentials();
 	}
 }

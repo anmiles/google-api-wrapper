@@ -197,6 +197,12 @@ describe('src/lib/api', () => {
 				expect(secrets.deleteCredentials).toHaveBeenCalledWith(profile);
 			});
 
+			it('should not delete credentials file if credentials are temporary', async () => {
+				const tempInstance = await api.getAPI('calendar', profile, { temporary : true });
+				await tempInstance.revoke();
+				expect(secrets.deleteCredentials).not.toHaveBeenCalled();
+			});
+
 			it('should revoke credentials in google API', async () => {
 				await instance.revoke();
 				expect(googleAuth.revokeCredentials).toHaveBeenCalledWith();
