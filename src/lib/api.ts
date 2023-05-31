@@ -26,7 +26,21 @@ type CommonResponse<TItem> = {
 class Api<TApi extends keyof typeof allApis> {
 	api: ReturnType<typeof allApis[TApi]>;
 	private auth: GoogleApis.Common.OAuth2Client;
+
+	private apiName: TApi;
 	private profile: string;
+	private authOptions?: AuthOptions;
+
+	constructor(apiName: TApi, profile: string, authOptions?: AuthOptions) {
+		this.apiName     = apiName;
+		this.profile     = profile;
+		this.authOptions = authOptions;
+	}
+
+	async init() {
+		this.auth = await getAuth(this.profile, this.authOptions);
+		this.api  = allApis[this.apiName](this.auth) as ReturnType<typeof allApis[TApi]>;
+	}
 
 	async getItems<TItem>(selectAPI: (api: ReturnType<typeof allApis[TApi]>) => CommonApi<TItem>, params: any, options?: CommonOptions): Promise<TItem[]> {
 		const items: TItem[] = [];
@@ -41,8 +55,8 @@ class Api<TApi extends keyof typeof allApis> {
 			} catch (ex) {
 				if (ex.message === 'invalid_grant') {
 					deleteCredentials(this.profile);
-					throw `Session is not valid anymore. Please run 'npm run login ${this.profile}' to login again`;
-
+					await this.init();
+					return this.getItems(selectAPI, params, options);
 				} else {
 					throw ex;
 				}
@@ -67,11 +81,9 @@ class Api<TApi extends keyof typeof allApis> {
 	}
 }
 
-async function getApi<TApi extends keyof typeof allApis>(api: TApi, profile: string, options?: AuthOptions): Promise<Api<TApi>> {
-	const instance      = new Api<TApi>();
-	instance['auth']    = await getAuth(profile, options);
-	instance['profile'] = profile;
-	instance.api        = allApis[api](instance['auth']) as ReturnType<typeof allApis[TApi]>;
+async function getApi<TApi extends keyof typeof allApis>(apiName: TApi, profile: string, authOptions?: AuthOptions): Promise<Api<TApi>> {
+	const instance = new Api<TApi>(apiName, profile, authOptions);
+	await instance.init();
 	return instance;
 }
 

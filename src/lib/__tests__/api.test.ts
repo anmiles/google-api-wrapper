@@ -26,6 +26,8 @@ const pageTokens = [
 
 const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | undefined>) => ({
 	list : jest.fn().mockImplementation(async ({ pageToken }: {pageToken?: string}) => {
+		const listException = getListException();
+
 		if (listException) {
 			throw listException;
 		}
@@ -58,10 +60,10 @@ const googleAuth = {
 
 const scopes = [ 'scope1', 'scope2' ];
 
-let listException: Error | undefined;
+const getListException: jest.Mock<Error | undefined> = jest.fn();
 
 beforeEach(() => {
-	listException = undefined;
+	getListException.mockReturnValue(undefined);
 });
 
 jest.mock('googleapis', () => ({
@@ -105,9 +107,9 @@ describe('src/lib/api', () => {
 		});
 
 		it('should return instance wrapper for google api', async () => {
-			const instance = await api.getApi('calendar', profile);
+			const instance = await api.getApi('calendar', profile, { scopes, temporary : true });
 
-			expect(instance).toEqual({ api : calendarApi, profile, auth : googleAuth });
+			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarApi, auth : googleAuth });
 		});
 	});
 
@@ -116,6 +118,14 @@ describe('src/lib/api', () => {
 
 		beforeEach(async () => {
 			instance = await api.getApi('calendar', profile);
+		});
+
+		describe('constructor', () => {
+			it('should return instance', async () => {
+				const instance = new api.Api('calendar', profile, { scopes, temporary : true });
+
+				expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true } });
+			});
 		});
 
 		describe('getItems', () => {
@@ -149,15 +159,29 @@ describe('src/lib/api', () => {
 				expect(sleep).toHaveBeenCalledWith(300);
 			});
 
-			it('should delete credentials and warn about creating new ones if API exception is invalid_grant', async () => {
-				listException = new Error('invalid_grant');
-				await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(`Session is not valid anymore. Please run 'npm run login ${profile}' to login again`);
+			it('should be initialized and called once if no API error', async () => {
+				const getItemsSpy = jest.spyOn(instance, 'getItems');
+				await instance.getItems((api) => api.calendarList, args);
+				expect(auth.getAuth).toHaveBeenCalledTimes(1);
+				expect(getItemsSpy).toHaveBeenCalledTimes(1);
+			});
+
+			it('should delete credentials, re-initialize api and retry while API exception is invalid_grant', async () => {
+				const error = new Error('invalid_grant');
+				// fail twice
+				getListException.mockReturnValueOnce(error).mockReturnValueOnce(error);
+
+				const getItemsSpy = jest.spyOn(instance, 'getItems');
+				await instance.getItems((api) => api.calendarList, args);
 				expect(secrets.deleteCredentials).toHaveBeenCalledWith(profile);
+				expect(auth.getAuth).toHaveBeenCalledTimes(3);
+				expect(getItemsSpy).toHaveBeenCalledTimes(3);
 			});
 
 			it('should re-throw API exception if not invalid_grant', async () => {
-				listException = new Error('random exception');
-				await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(listException);
+				const error = new Error('random exception');
+				getListException.mockReturnValueOnce(error);
+				await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(error);
 			});
 
 			it('should return items data', async () => {
