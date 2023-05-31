@@ -16,6 +16,7 @@
 		"esModuleInterop": true,
 		"strictNullChecks": true,
 		"allowSyntheticDefaultImports": true,
+		"noErrorTruncation": true
 	},
 	"exclude": [
 		"**/node_modules/",

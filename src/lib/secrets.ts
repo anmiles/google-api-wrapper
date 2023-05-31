@@ -10,8 +10,8 @@ import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
 
 import secrets from './secrets';
 
-export { getSecrets, getCredentials };
-export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, checkSecrets, getSecretsError, getScopesError };
+export { getSecrets, getCredentials, deleteCredentials };
+export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, deleteCredentials, checkSecrets, getSecretsError, getScopesError };
 
 const port                = 6006;
 const host                = `localhost:${port}`;
@@ -122,6 +122,14 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 
 		server.listen(port);
 	});
+}
+
+function deleteCredentials(profile: string): void {
+	const credentialsFile = getCredentialsFile(profile);
+
+	if (fs.existsSync(credentialsFile)) {
+		fs.rmSync(credentialsFile);
+	}
 }
 
 function formatMessage(message: string): string {

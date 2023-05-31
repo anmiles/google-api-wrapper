@@ -17,6 +17,7 @@ jest.mock<typeof secrets>('../secrets', () => ({
 	getCredentials      : jest.fn(),
 	validateCredentials : jest.fn(),
 	createCredentials   : jest.fn().mockImplementation(() => credentialsJSON),
+	deleteCredentials   : jest.fn(),
 	checkSecrets        : jest.fn(),
 	getScopesError      : jest.fn().mockImplementation(() => scopesError),
 	getSecretsError     : jest.fn().mockImplementation(() => secretsError),
@@ -40,6 +41,7 @@ async function makeRequest(url: string | undefined) {
 
 jest.mock<Partial<typeof fs>>('fs', () => ({
 	existsSync : jest.fn().mockImplementation(() => exists),
+	rmSync     : jest.fn(),
 }));
 
 jest.mock<Partial<typeof path>>('path', () => ({
@@ -513,6 +515,20 @@ describe('src/lib/secrets', () => {
 			const result = await promise;
 
 			expect(result).toEqual(credentialsJSON);
+		});
+	});
+
+	describe('deleteCredentials', () => {
+		it('should delete credentials file if exists', () => {
+			exists = true;
+			original.deleteCredentials(profile);
+			expect(fs.rmSync).toHaveBeenCalledWith(credentialsFile);
+		});
+
+		it('should not do anything if credentials file does not exist', () => {
+			exists = false;
+			original.deleteCredentials(profile);
+			expect(fs.rmSync).not.toHaveBeenCalled();
 		});
 	});
 

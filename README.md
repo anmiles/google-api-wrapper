@@ -1,6 +1,6 @@
 # @anmiles/google-api-wrapper
 
-Provides quick interface for getting google API data
+Provides quick interface for getting google API data. Support all google APIs as per May 31, 2023.
 
 ----
 
@@ -22,6 +22,7 @@ Provides quick interface for getting google API data
 import { createProfile, login } from '@anmiles/google-api-wrapper';
 
 createProfile("username");
+// Persistent credentials will be generated and stored to credentials file.
 login("username");
 
 ```
@@ -30,13 +31,14 @@ login("username");
 ``` js
 /* calendar.js */
 
-import { getProfiles, getCalendarAPI } from '@anmiles/google-api-wrapper';
+import { getProfiles, getAPI } from '@anmiles/google-api-wrapper';
 
 require('./auth');
 
 getProfiles().map(async (profile) => {
-	const calendarAPI = getCalendarAPI(profile); // auth is persisted by login() function from `auth.js`
-	const events = await getItems<GoogleApis.calendar_v3.Schema$Event, GoogleApis.calendar_v3.Params$Resource$Events$List>(calendarAPI.events, { timeMax: new Date().toISOString() });
+	// Persistent credentials will be generated and stored to credentials file.
+	const calendarAPI = getAPI('calendar', profile);
+	const events = await calendarAPI.getItems((api) => api.events, { timeMax: new Date().toISOString() });
 	events.forEach((event) => console.log(`Event: ${event.summary}`));
 });
 
@@ -46,12 +48,15 @@ getProfiles().map(async (profile) => {
 ``` js
 /* videos.js */
 
-import { getProfiles, getYoutubeAPI } from '@anmiles/google-api-wrapper';
+import { getProfiles, getAPI } from '@anmiles/google-api-wrapper';
 
 getProfiles().map(async (profile) => {
-	const youtubeAPI = getYoutubeAPI(profile, { temporary: true });
-	const videos = await getItems<GoogleApis.youtube_v3.Schema$PlaylistItem, GoogleApis.youtube_v3.Params$Resource$Playlistitems$List>(youtubeAPI.playlistItems, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
+	// Temporary credentials will be generated and not stored to credentials file
+	const youtubeAPI = getAPI('youtube', profile, { temporary: true });
+	const videos = await youtubeAPI.getItems((api) => api.playlistItems, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
 	videos.forEach((video) => console.log(`Downloaded: ${video.snippet?.title}`));
+	// Revoke temporary credentials in the end
+	await youtubeAPI.revoke();
 });
 
 ```

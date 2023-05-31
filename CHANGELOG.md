@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [10.0.0](../../tags/v10.0.0) - 2023-05-31
+### Added
+- Credentials can be revoked. Useful after working with temporary credentials to not let re-use them
+- All existing google APIs are now available
+### Changed
+- Single entry point for creating any APIs
+  - BEFORE: 
+	```
+	import { getCalendarAPI } from '@anmiles/google-api-wrapper';
+	const calendarAPI = getCalendarAPI(profile);
+	```
+  - AFTER:
+	```
+	import { getAPI } from '@anmiles/google-api-wrapper';
+	const calendarAPI = getAPI('calendar', profile);
+	```
+- Changed signature for `getItems`. Also explicit types are now redundant.
+  - BEFORE: 
+	```
+	const events = await getItems<GoogleApis.calendar_v3.Schema$Event, GoogleApis.calendar_v3.Params$Resource$Events$List>(calendarAPI.events, { ...args });
+	```
+  - AFTER:
+	```
+	const events = await getItems((api) => api.events, { ...args });
+	```
+- In case of `invalid_grant` error, credentials are being removed and warning shown. Will need to create new credentials.
+
 ## [9.1.0](../../tags/v9.1.0) - 2023-05-26
 ### Changed
 - Concurrent servers on the same port between different applications
