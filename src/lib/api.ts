@@ -8,7 +8,7 @@ import { deleteCredentials } from './secrets';
 
 const requestInterval = 300;
 
-type CommonApi<TItem> = {
+type CommonAPI<TItem> = {
 	list: {
 		(params?: { pageToken: string | undefined }, options?: GoogleApis.Common.MethodOptions): Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
 		(callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void): void;
@@ -23,15 +23,15 @@ type CommonResponse<TItem> = {
 	nextPageToken?: string | null | undefined
 };
 
-class Api<TApi extends keyof typeof allApis> {
-	api: ReturnType<typeof allApis[TApi]>;
+class API<TKey extends keyof typeof allAPIs> {
+	api: ReturnType<typeof allAPIs[TKey]>;
 	private auth: GoogleApis.Common.OAuth2Client;
 
-	private apiName: TApi;
+	private apiName: TKey;
 	private profile: string;
 	private authOptions?: AuthOptions;
 
-	constructor(apiName: TApi, profile: string, authOptions?: AuthOptions) {
+	constructor(apiName: TKey, profile: string, authOptions?: AuthOptions) {
 		this.apiName     = apiName;
 		this.profile     = profile;
 		this.authOptions = authOptions;
@@ -39,10 +39,10 @@ class Api<TApi extends keyof typeof allApis> {
 
 	async init() {
 		this.auth = await getAuth(this.profile, this.authOptions);
-		this.api  = allApis[this.apiName](this.auth) as ReturnType<typeof allApis[TApi]>;
+		this.api  = allAPIs[this.apiName](this.auth) as ReturnType<typeof allAPIs[TKey]>;
 	}
 
-	async getItems<TItem>(selectAPI: (api: ReturnType<typeof allApis[TApi]>) => CommonApi<TItem>, params: any, options?: CommonOptions): Promise<TItem[]> {
+	async getItems<TItem>(selectAPI: (api: ReturnType<typeof allAPIs[TKey]>) => CommonAPI<TItem>, params: any, options?: CommonOptions): Promise<TItem[]> {
 		const items: TItem[] = [];
 
 		let pageToken: string | null | undefined = undefined;
@@ -81,14 +81,14 @@ class Api<TApi extends keyof typeof allApis> {
 	}
 }
 
-async function getApi<TApi extends keyof typeof allApis>(apiName: TApi, profile: string, authOptions?: AuthOptions): Promise<Api<TApi>> {
-	const instance = new Api<TApi>(apiName, profile, authOptions);
+async function getAPI<TKey extends keyof typeof allAPIs>(apiName: TKey, profile: string, authOptions?: AuthOptions): Promise<API<TKey>> {
+	const instance = new API<TKey>(apiName, profile, authOptions);
 	await instance.init();
 	return instance;
 }
 
 /* istanbul ignore next */
-const allApis = {
+const allAPIs = {
 	abusiveexperiencereport          : (auth: GoogleApis.Common.OAuth2Client) => google.abusiveexperiencereport({ version : 'v1', auth }),
 	acceleratedmobilepageurl         : (auth: GoogleApis.Common.OAuth2Client) => google.acceleratedmobilepageurl({ version : 'v1', auth }),
 	accessapproval                   : (auth: GoogleApis.Common.OAuth2Client) => google.accessapproval({ version : 'v1', auth }),
@@ -361,5 +361,5 @@ const allApis = {
 	youtubereporting                 : (auth: GoogleApis.Common.OAuth2Client) => google.youtubereporting({ version : 'v1', auth }),
 } as const;
 
-export { getApi };
-export default { getApi, Api };
+export { getAPI };
+export default { getAPI, API };

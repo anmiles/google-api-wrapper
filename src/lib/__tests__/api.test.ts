@@ -50,7 +50,7 @@ const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | und
 const args = { key : 'value' };
 
 const profile     = 'username1';
-const calendarApi = {
+const calendarAPI = {
 	calendarList : getAPI(response, pageTokens),
 };
 
@@ -68,7 +68,7 @@ beforeEach(() => {
 
 jest.mock('googleapis', () => ({
 	google : {
-		calendar : jest.fn().mockImplementation(() => calendarApi),
+		calendar : jest.fn().mockImplementation(() => calendarAPI),
 	},
 }));
 
@@ -87,42 +87,42 @@ jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
 jest.mock<Partial<typeof sleep>>('@anmiles/sleep', () => jest.fn());
 
 describe('src/lib/api', () => {
-	describe('getApi', () => {
+	describe('getAPI', () => {
 		it('should call getAuth', async () => {
-			await api.getApi('calendar', profile);
+			await api.getAPI('calendar', profile);
 
 			expect(auth.getAuth).toHaveBeenCalledWith(profile, undefined);
 		});
 
 		it('should pass temporariness and scopes', async () => {
-			await api.getApi('calendar', profile, { scopes, temporary : true });
+			await api.getAPI('calendar', profile, { scopes, temporary : true });
 
 			expect(auth.getAuth).toHaveBeenCalledWith(profile, { scopes, temporary : true });
 		});
 
 		it('should get google api', async () => {
-			await api.getApi('calendar', profile);
+			await api.getAPI('calendar', profile);
 
 			expect(google.calendar).toHaveBeenCalledWith({ version : 'v3', auth : googleAuth });
 		});
 
 		it('should return instance wrapper for google api', async () => {
-			const instance = await api.getApi('calendar', profile, { scopes, temporary : true });
+			const instance = await api.getAPI('calendar', profile, { scopes, temporary : true });
 
-			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarApi, auth : googleAuth });
+			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarAPI, auth : googleAuth });
 		});
 	});
 
-	describe('Api', () => {
-		let instance: InstanceType<typeof api.Api<'calendar'>>;
+	describe('API', () => {
+		let instance: InstanceType<typeof api.API<'calendar'>>;
 
 		beforeEach(async () => {
-			instance = await api.getApi('calendar', profile);
+			instance = await api.getAPI('calendar', profile);
 		});
 
 		describe('constructor', () => {
 			it('should return instance', async () => {
-				const instance = new api.Api('calendar', profile, { scopes, temporary : true });
+				const instance = new api.API('calendar', profile, { scopes, temporary : true });
 
 				expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true } });
 			});
@@ -133,7 +133,7 @@ describe('src/lib/api', () => {
 				await instance.getItems((api) => api.calendarList, args);
 
 				pageTokens.forEach((pageToken) => {
-					expect(calendarApi.calendarList.list).toHaveBeenCalledWith({ ...args, pageToken });
+					expect(calendarAPI.calendarList.list).toHaveBeenCalledWith({ ...args, pageToken });
 				});
 			});
 
