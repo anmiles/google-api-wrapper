@@ -55,8 +55,6 @@ getProfiles().map(async (profile) => {
 	const youtubeAPI = getAPI('youtube', profile, { temporary: true });
 	const videos = await youtubeAPI.getItems((api) => api.playlistItems, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
 	videos.forEach((video) => console.log(`Downloaded: ${video.snippet?.title}`));
-	// Revoke temporary credentials in the end
-	await youtubeAPI.revoke();
 });
 
 ```

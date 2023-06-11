@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
-import { log } from '@anmiles/logger';
+import { log, warn } from '@anmiles/logger';
 import sleep from '@anmiles/sleep';
 import type { AuthOptions, CommonOptions } from '../types';
 import { getAuth } from './auth';
@@ -53,7 +53,8 @@ class API<TKey extends keyof typeof allAPIs> {
 			try {
 				response = await selectAPI(this.api).list({ ...params, pageToken });
 			} catch (ex) {
-				if (ex.message === 'invalid_grant') {
+				if ((ex.message === 'invalid_grant' || ex.message === 'Invalid credentials') && !this.authOptions?.temporary) {
+					warn('Access token stored is invalid, re-creating...');
 					deleteCredentials(this.profile);
 					await this.init();
 					return this.getItems(selectAPI, params, options);
@@ -74,17 +75,17 @@ class API<TKey extends keyof typeof allAPIs> {
 
 		return items;
 	}
-
-	async revoke() {
-		if (!this.authOptions?.temporary) {
-			deleteCredentials(this.profile);
-		}
-
-		return this.auth.revokeCredentials();
-	}
 }
 
 async function getAPI<TKey extends keyof typeof allAPIs>(apiName: TKey, profile: string, authOptions?: AuthOptions): Promise<API<TKey>> {
+	if (!authOptions?.temporary) {
+		const writableScopes = authOptions?.scopes?.filter((scope) => !scope.endsWith('.readonly')) || [];
+
+		if (writableScopes.length > 0) {
+			warn(`WARNING: trying to create permanent credentials using non-readonly scopes (${writableScopes}). Permanent credentials will be stored in the file and potentially might be re-used to modify your data`);
+		}
+	}
+
 	const instance = new API<TKey>(apiName, profile, authOptions);
 	await instance.init();
 	return instance;

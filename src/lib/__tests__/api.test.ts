@@ -54,9 +54,7 @@ const calendarAPI = {
 	calendarList : getAPI(response, pageTokens),
 };
 
-const googleAuth = {
-	revokeCredentials : jest.fn(),
-};
+const googleAuth = 'googleAuth';
 
 const scopes = [ 'scope1', 'scope2' ];
 
@@ -81,7 +79,8 @@ jest.mock<Partial<typeof secrets>>('../secrets', () => ({
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
-	log : jest.fn(),
+	log  : jest.fn(),
+	warn : jest.fn(),
 }));
 
 jest.mock<Partial<typeof sleep>>('@anmiles/sleep', () => jest.fn());
@@ -110,6 +109,24 @@ describe('src/lib/api', () => {
 			const instance = await api.getAPI('calendar', profile, { scopes, temporary : true });
 
 			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarAPI, auth : googleAuth });
+		});
+
+		it('should warn when creating permanent credentials using non-readonly scopes', async () => {
+			await api.getAPI('calendar', profile, { scopes });
+
+			expect(logger.warn).toHaveBeenCalledWith('WARNING: trying to create permanent credentials using non-readonly scopes (scope1,scope2). Permanent credentials will be stored in the file and potentially might be re-used to modify your data');
+		});
+
+		it('should not warn when creating temporary credentials using non-readonly scopes', async () => {
+			await api.getAPI('calendar', profile, { scopes, temporary : true });
+
+			expect(logger.warn).not.toHaveBeenCalled();
+		});
+
+		it('should not warn when creating permanent credentials using readonly scopes only', async () => {
+			await api.getAPI('calendar', profile, { scopes : [ 'scope1.readonly', 'scope2.readonly' ], temporary : true });
+
+			expect(logger.warn).not.toHaveBeenCalled();
 		});
 	});
 
@@ -160,25 +177,47 @@ describe('src/lib/api', () => {
 			});
 
 			it('should be initialized and called once if no API error', async () => {
+				const getAuthSpy  = jest.spyOn(auth, 'getAuth');
 				const getItemsSpy = jest.spyOn(instance, 'getItems');
+
 				await instance.getItems((api) => api.calendarList, args);
-				expect(auth.getAuth).toHaveBeenCalledTimes(1);
+
+				expect(getAuthSpy).toHaveBeenCalledTimes(1);
 				expect(getItemsSpy).toHaveBeenCalledTimes(1);
 			});
 
-			it('should delete credentials, re-initialize api and retry while API exception is invalid_grant', async () => {
-				const error = new Error('invalid_grant');
-				// fail twice
-				getListException.mockReturnValueOnce(error).mockReturnValueOnce(error);
+			it('should delete credentials, re-initialize api and retry if API exception is invalid_grant or Invalid credentials', async () => {
+				for (const message of [ 'invalid_grant', 'Invalid credentials' ]) {
+					const error = new Error(message);
+					// fail twice
+					getListException.mockReturnValueOnce(error).mockReturnValueOnce(error);
 
-				const getItemsSpy = jest.spyOn(instance, 'getItems');
-				await instance.getItems((api) => api.calendarList, args);
-				expect(secrets.deleteCredentials).toHaveBeenCalledWith(profile);
-				expect(auth.getAuth).toHaveBeenCalledTimes(3);
-				expect(getItemsSpy).toHaveBeenCalledTimes(3);
+					const getAuthSpy  = jest.spyOn(auth, 'getAuth');
+					const getItemsSpy = jest.spyOn(instance, 'getItems');
+					getAuthSpy.mockClear();
+					getItemsSpy.mockClear();
+
+					await instance.getItems((api) => api.calendarList, args);
+
+					expect(logger.warn).toHaveBeenCalledWith('Access token stored is invalid, re-creating...');
+					expect(secrets.deleteCredentials).toHaveBeenCalledWith(profile);
+					expect(getAuthSpy).toHaveBeenCalledTimes(2);
+					expect(getItemsSpy).toHaveBeenCalledTimes(3);
+				}
 			});
 
-			it('should re-throw API exception if not invalid_grant', async () => {
+			it('should re-throw if credentials are just created but API exception is invalid_grant or Invalid credentials', async () => {
+				for (const message of [ 'invalid_grant', 'Invalid credentials' ]) {
+					const error = new Error(message);
+					// fail twice
+					getListException.mockReturnValueOnce(error);
+
+					const instance = await api.getAPI('calendar', profile, { temporary : true });
+					await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(error);
+				}
+			});
+
+			it('should re-throw API exception if not invalid_grant or Invalid credentials', async () => {
 				const error = new Error('random exception');
 				getListException.mockReturnValueOnce(error);
 				await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(error);
@@ -188,24 +227,6 @@ describe('src/lib/api', () => {
 				const items = await instance.getItems((api) => api.calendarList, args);
 
 				expect(items).toEqual(items);
-			});
-		});
-
-		describe('revoke', () => {
-			it('should delete credentials file for current profile', async () => {
-				await instance.revoke();
-				expect(secrets.deleteCredentials).toHaveBeenCalledWith(profile);
-			});
-
-			it('should not delete credentials file if credentials are temporary', async () => {
-				const tempInstance = await api.getAPI('calendar', profile, { temporary : true });
-				await tempInstance.revoke();
-				expect(secrets.deleteCredentials).not.toHaveBeenCalled();
-			});
-
-			it('should revoke credentials in google API', async () => {
-				await instance.revoke();
-				expect(googleAuth.revokeCredentials).toHaveBeenCalledWith();
 			});
 		});
 	});

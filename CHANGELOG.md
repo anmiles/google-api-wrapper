@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [14.0.0](../../tags/v14.0.0) - 2023-06-11
+### Added
+- Warn if trying to store non-readonly credentials in a file
+### Removed
+- Credentials can't be explicitly revoked anymore since this affects other credentials based on the same client id for current user
+
 ## [13.0.1](../../tags/v13.0.1) - 2023-06-01
 ### Changed
 - Do not delete credentials file if revoking temporary credentials because they are not stored in the file
