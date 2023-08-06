@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [14.1.0](../../tags/v14.1.0) - 2023-08-06
+### Added
+- Filtering profiles
+
 ## [14.0.0](../../tags/v14.0.0) - 2023-06-11
 ### Added
 - Warn if trying to store non-readonly credentials in a file
@@ -21,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All existing google APIs are now available
 ### Changed
 - Single entry point for creating any APIs
-  - BEFORE: 
+  - BEFORE:
 	```
 	import { getCalendarAPI } from '@anmiles/google-api-wrapper';
 	const calendarAPI = getCalendarAPI(profile);
@@ -32,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	const calendarAPI = getAPI('calendar', profile);
 	```
 - Changed signature for `getItems`. Also explicit types are now redundant.
-  - BEFORE: 
+  - BEFORE:
 	```
 	const events = await getItems<GoogleApis.calendar_v3.Schema$Event, GoogleApis.calendar_v3.Params$Resource$Events$List>(calendarAPI.events, { ...args });
 	```
