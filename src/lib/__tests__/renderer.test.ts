@@ -38,7 +38,7 @@ jest.mock<Partial<typeof paths>>('../paths', () => ({
 const mockTemplates: Record<TemplateName, string> = {
 	page  : 'page content = (${content})',
 	auth  : 'auth profile = (${profile}) authUrl = (${authUrl}) scopesList = (${scopesList})',
-	scope : 'scope type = (${type}) name = (${name})',
+	scope : 'scope type = (${type}) title = (${title}) name = (${name})',
 	done  : 'done profile = (${profile})',
 };
 
@@ -50,7 +50,7 @@ describe('src/lib/renderer', () => {
 	describe('renderAuth', () => {
 		it('should return auth page', () => {
 			const result = original.renderAuth({ authUrl, profile, scope });
-			expect(result).toEqual('page content = (auth profile = (username) authUrl = (https://authUrl) scopesList = (scope type = (readonly) name = (scope1.readonly)\nscope type = () name = (scope2)))');
+			expect(result).toEqual('page content = (auth profile = (username) authUrl = (https://authUrl) scopesList = (scope type = (readonly) title = (Readonly (cannot change or delete your data)) name = (scope1.readonly)\nscope type = () title = (Writable (can change or delete your data)) name = (scope2)))');
 		});
 	});
 
@@ -63,11 +63,11 @@ describe('src/lib/renderer', () => {
 
 	describe('render', () => {
 		it('should replace all template variables with their values', () => {
-			const values = { type : 'readonly', name : 'scope.readonly' };
+			const values = { type : 'readonly', title : 'Readonly scope', name : 'scope.readonly' };
 
 			const result = original.render('scope', values);
 
-			expect(result).toEqual('scope type = (readonly) name = (scope.readonly)');
+			expect(result).toEqual('scope type = (readonly) title = (Readonly scope) name = (scope.readonly)');
 		});
 
 		it('should replace non-existing template variable with empty string', () => {
@@ -75,7 +75,7 @@ describe('src/lib/renderer', () => {
 
 			const result = original.render('scope', values as any);
 
-			expect(result).toEqual('scope type = () name = (scope.readonly)');
+			expect(result).toEqual('scope type = () title = () name = (scope.readonly)');
 		});
 	});
 

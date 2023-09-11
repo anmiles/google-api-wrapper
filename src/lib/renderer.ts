@@ -7,7 +7,7 @@ export { templates, renderAuth, renderDone };
 const templates = {
 	page  : [ 'content' ] as const,
 	auth  : [ 'profile', 'authUrl', 'scopesList' ],
-	scope : [ 'type', 'name' ] as const,
+	scope : [ 'type', 'title', 'name' ] as const,
 	done  : [ 'profile' ] as const,
 } as const;
 
@@ -17,8 +17,9 @@ const allHTML = {} as Record<TemplateName, string>;
 
 function renderAuth({ profile, authUrl, scope }: { profile: string, authUrl: string, scope: string[] }) {
 	const scopesList = scope.map((s) => render('scope', {
-		name : s.split('/').pop() as string,
-		type : s.endsWith('.readonly') ? 'readonly' : '',
+		name  : s.split('/').pop() as string,
+		title : s.endsWith('.readonly') ? 'Readonly (cannot change or delete your data)' : 'Writable (can change or delete your data)',
+		type  : s.endsWith('.readonly') ? 'readonly' : '',
 	})).join('\n');
 
 	const content = render('auth', { profile, authUrl, scopesList });
