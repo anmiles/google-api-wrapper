@@ -7,6 +7,7 @@ import { warn } from '@anmiles/logger';
 import type { Secrets, AuthOptions } from '../types';
 import '@anmiles/prototypes';
 import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
+import { renderAuth, renderDone } from './renderer';
 
 import secrets from './secrets';
 
@@ -96,12 +97,11 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 			const code = url.searchParams.get('code');
 
 			if (!code) {
-				const scopesList = scope.map((s) => `<li>${s}</li>`).join('');
-				response.end(formatMessage(`<p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p>\n<p>Required scopes:</p>\n<ul>${scopesList}</ul>`));
+				response.end(renderAuth({ profile, authUrl, scope }));
 				return;
 			}
 
-			response.end(formatMessage('<p>Please close this page and return to application</p>'));
+			response.end(renderDone({ profile }));
 			server.destroy();
 			const { tokens } = await auth.getToken(code);
 			resolve(tokens);
@@ -130,16 +130,6 @@ function deleteCredentials(profile: string): void {
 	if (fs.existsSync(credentialsFile)) {
 		fs.rmSync(credentialsFile);
 	}
-}
-
-function formatMessage(message: string): string {
-	return [
-		'<div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">',
-		'<div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">',
-		message,
-		'</div>',
-		'</div>',
-	].join('\n');
 }
 
 function checkSecrets(profile: string, secretsObject: Secrets, secretsFile: string): true | void {

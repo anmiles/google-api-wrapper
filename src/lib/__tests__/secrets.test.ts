@@ -5,6 +5,7 @@ import open from 'open';
 import type GoogleApis from 'googleapis';
 import logger from '@anmiles/logger';
 import emitter from 'event-emitter';
+import renderer from '../renderer';
 import paths from '../paths';
 import type { Secrets } from '../../types';
 import '@anmiles/prototypes';
@@ -21,6 +22,11 @@ jest.mock<typeof secrets>('../secrets', () => ({
 	checkSecrets        : jest.fn(),
 	getScopesError      : jest.fn().mockImplementation(() => scopesError),
 	getSecretsError     : jest.fn().mockImplementation(() => secretsError),
+}));
+
+jest.mock<Partial<typeof renderer>>('../renderer', () => ({
+	renderAuth : jest.fn().mockImplementation(({ profile, authUrl, scope } : { profile: string, authUrl: string, scope: string[] }) => `content = profile = ${profile} authUrl = ${authUrl} scope = ${scope.join('|')}`),
+	renderDone : jest.fn().mockImplementation(() => 'content = done'),
 }));
 
 jest.mock<Partial<typeof http>>('http', () => ({
@@ -60,6 +66,7 @@ jest.mock<Partial<typeof paths>>('../paths', () => ({
 	getScopesFile      : jest.fn().mockImplementation(() => scopesFile),
 	getSecretsFile     : jest.fn().mockImplementation(() => secretsFile),
 	getCredentialsFile : jest.fn().mockImplementation(() => credentialsFile),
+	getTemplateFile    : jest.fn().mockImplementation(() => templateFile),
 }));
 
 jest.useFakeTimers();
@@ -72,6 +79,7 @@ const profile          = 'username1';
 const scopesFile       = 'scopes.json';
 const secretsFile      = 'secrets/username1.json';
 const credentialsFile  = 'secrets/username1.credentials.json';
+const templateFile     = 'templates/template.json';
 const wrongRedirectURI = 'wrong_redirect_uri';
 
 const scopesError  = 'scopesError';
@@ -79,7 +87,7 @@ const secretsError = 'secretsError';
 
 const scopesJSON: string[] = [
 	'https://www.googleapis.com/auth/calendar.calendars.readonly',
-	'https://www.googleapis.com/auth/calendar.events.readonly',
+	'https://www.googleapis.com/auth/calendar.events',
 ];
 
 const secretsJSON: Secrets = {
@@ -371,7 +379,7 @@ describe('src/lib/secrets', () => {
 				prompt      : undefined,
 				scope      	: [
 					'https://www.googleapis.com/auth/calendar.calendars.readonly',
-					'https://www.googleapis.com/auth/calendar.events.readonly',
+					'https://www.googleapis.com/auth/calendar.events',
 				],
 			});
 		});
@@ -386,7 +394,7 @@ describe('src/lib/secrets', () => {
 				prompt      : 'consent',
 				scope      	: [
 					'https://www.googleapis.com/auth/calendar.calendars.readonly',
-					'https://www.googleapis.com/auth/calendar.events.readonly',
+					'https://www.googleapis.com/auth/calendar.events',
 				],
 			});
 		});
@@ -442,14 +450,7 @@ describe('src/lib/secrets', () => {
 			makeRequest('/');
 			await Promise.resolve();
 
-			expect(endSpy).toHaveBeenCalledWith(`\
-<div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
-<div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
-<p>Please open <a href="${authUrl}">auth page</a> using <strong>${profile}</strong> google profile</p>\n\
-<p>Required scopes:</p>\n\
-<ul><li>https://www.googleapis.com/auth/calendar.calendars.readonly</li><li>https://www.googleapis.com/auth/calendar.events.readonly</li></ul>\n\
-</div>\n\
-</div>`);
+			expect(endSpy).toHaveBeenCalledWith('content = profile = username1 authUrl = https://authUrl scope = https://www.googleapis.com/auth/calendar.calendars.readonly|https://www.googleapis.com/auth/calendar.events');
 		});
 
 		it('should ask to close webpage', async () => {
@@ -457,12 +458,7 @@ describe('src/lib/secrets', () => {
 			makeRequest(tokenUrl);
 			await Promise.resolve();
 
-			expect(endSpy).toHaveBeenCalledWith('\
-<div style="width: 100%;height: 100%;display: flex;align-items: start;justify-content: center">\n\
-<div style="padding: 0 1em;border: 1px solid black;font-family: Arial, sans-serif;margin: 1em;">\n\
-<p>Please close this page and return to application</p>\n\
-</div>\n\
-</div>');
+			expect(endSpy).toHaveBeenCalledWith('content = done');
 		});
 
 		it('should close server and destroy all connections if request.url is truthy', async () => {
@@ -577,7 +573,7 @@ Here is how to obtain it:\n\
 				Specify your email as user support email and as developer contact information on the very bottom\n\
 				Click "Save and continue"\n\
 			Click "Add or remove scopes"\n\
-				Add scopes: https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events.readonly\n\
+				Add scopes: https://www.googleapis.com/auth/calendar.calendars.readonly,https://www.googleapis.com/auth/calendar.events\n\
 				Click "Save and continue"\n\
 			Click "Add users"\n\
 				Add your email\n\

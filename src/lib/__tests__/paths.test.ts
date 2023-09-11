@@ -8,6 +8,7 @@ jest.mock<typeof paths>('../paths', () => ({
 	getScopesFile      : jest.fn().mockImplementation(() => scopesFile),
 	getSecretsFile     : jest.fn().mockImplementation(() => secretsFile),
 	getCredentialsFile : jest.fn().mockImplementation(() => credentialsFile),
+	getTemplateFile    : jest.fn().mockImplementation(() => templateFile),
 }));
 
 jest.mock<Partial<typeof fs>>('fs', () => ({
@@ -17,15 +18,17 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 }));
 
 jest.mock<Partial<typeof path>>('path', () => ({
-	join    : jest.fn().mockImplementation((...args) => args.join('/')),
-	dirname : jest.fn().mockImplementation((arg) => arg.split('/').slice(0, -1).join('/')),
+	join : jest.fn().mockImplementation((...args) => args.join('/')),
 }));
 
-const profile         = 'username';
+const profile      = 'username';
+const templateName = 'auth';
+
 const profilesFile    = 'input/profiles.json';
 const scopesFile      = 'scopes.json';
 const secretsFile     = 'secrets/username.json';
 const credentialsFile = 'secrets/username.credentials.json';
+const templateFile    = 'node_modules/@anmiles/google-api-wrapper/dist/templates/auth.html';
 
 let exists: boolean;
 
@@ -59,6 +62,15 @@ describe('src/lib/paths', () => {
 			const result = original.getCredentialsFile(profile);
 
 			expect(result).toEqual(credentialsFile);
+		});
+	});
+
+	describe('getTemplateFile', () => {
+
+		it('should return credentials file', () => {
+			const result = original.getTemplateFile(templateName);
+
+			expect(result).toEqual(templateFile);
 		});
 	});
 });

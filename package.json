@@ -16,7 +16,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && tsc && copyfiles -u 1 src/templates/* dist/",
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "npm run lint -- --fix",
     "test": "jest --verbose",
@@ -29,6 +29,7 @@
     "login": "node ./dist/login.js"
   },
   "dependencies": {
+    "@anmiles/google-api-wrapper": "file:.",
     "@anmiles/logger": "^3.0.0",
     "@anmiles/prototypes": "^2.0.1",
     "@anmiles/sleep": "^1.0.2",
@@ -44,6 +45,7 @@
     "@types/server-destroy": "^1.0.1",
     "@typescript-eslint/eslint-plugin": "^5.59.2",
     "@typescript-eslint/parser": "^5.59.2",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.40.0",
     "eslint-plugin-align-assignments": "^1.1.2",
     "eslint-plugin-import": "^2.27.5",
