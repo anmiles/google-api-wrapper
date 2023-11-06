@@ -5,7 +5,8 @@ import { getTemplateFile } from './paths';
 export { templates, renderAuth, renderDone };
 
 const templates = {
-	page  : [ 'content' ] as const,
+	page  : [ 'css', 'content' ] as const,
+	css   : [ ] as const,
 	auth  : [ 'profile', 'authUrl', 'scopesList' ],
 	scope : [ 'type', 'title', 'name' ] as const,
 	done  : [ 'profile' ] as const,
@@ -22,13 +23,15 @@ function renderAuth({ profile, authUrl, scope }: { profile: string, authUrl: str
 		type  : s.endsWith('.readonly') ? 'readonly' : '',
 	})).join('\n');
 
+	const css     = render('css', {});
 	const content = render('auth', { profile, authUrl, scopesList });
-	return render('page', { content });
+	return render('page', { css, content });
 }
 
 function renderDone({ profile }: { profile: string }): string {
+	const css     = render('css', {});
 	const content = render('done', { profile });
-	return render('page', { content });
+	return render('page', { css, content });
 }
 
 // TODO: Use react

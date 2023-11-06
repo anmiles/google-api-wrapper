@@ -36,7 +36,8 @@ jest.mock<Partial<typeof paths>>('../paths', () => ({
 }));
 
 const mockTemplates: Record<TemplateName, string> = {
-	page  : 'page content = (${content})',
+	page  : 'page css = (${css}) content = (${content})',
+	css   : 'css',
 	auth  : 'auth profile = (${profile}) authUrl = (${authUrl}) scopesList = (${scopesList})',
 	scope : 'scope type = (${type}) title = (${title}) name = (${name})',
 	done  : 'done profile = (${profile})',
@@ -50,14 +51,14 @@ describe('src/lib/renderer', () => {
 	describe('renderAuth', () => {
 		it('should return auth page', () => {
 			const result = original.renderAuth({ authUrl, profile, scope });
-			expect(result).toEqual('page content = (auth profile = (username) authUrl = (https://authUrl) scopesList = (scope type = (readonly) title = (Readonly (cannot change or delete your data)) name = (scope1.readonly)\nscope type = () title = (Writable (can change or delete your data)) name = (scope2)))');
+			expect(result).toEqual('page css = (css) content = (auth profile = (username) authUrl = (https://authUrl) scopesList = (scope type = (readonly) title = (Readonly (cannot change or delete your data)) name = (scope1.readonly)\nscope type = () title = (Writable (can change or delete your data)) name = (scope2)))');
 		});
 	});
 
 	describe('renderDone', () => {
 		it('should return done page', () => {
 			const result = original.renderDone({ profile });
-			expect(result).toEqual('page content = (done profile = (username))');
+			expect(result).toEqual('page css = (css) content = (done profile = (username))');
 		});
 	});
 

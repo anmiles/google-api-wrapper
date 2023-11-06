@@ -1,0 +1,111 @@
+<style type="text/css">
+	* {
+		box-sizing: border-box;
+	}
+
+	html, body {
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+	}
+
+	body {
+		font-family: Arial, sans-serif;
+		font-size: 17px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 30px 0;
+	}
+
+	.box {
+		width: 450px;
+		min-height: 500px;
+		max-height: 100%;
+		padding: 82px 40px 28px 40px;
+		margin: 1em;
+		border: 1px solid #dadce0;
+		border-radius: 8px;
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.box:before {
+		width: 100%;
+		height: 34px;
+		border-bottom: 1px solid #dadce0;
+		position: absolute;
+		top: 0;
+		display: block;
+		content: '';
+	}
+
+	h1 {
+		font-size: 24px;
+		line-height: 40px;
+		font-weight: normal;
+		margin: 0;
+	}
+
+	p {
+		line-height: 32px;
+		margin: 0;
+	}
+
+	ul {
+		width: 100%;
+		margin: 18px 0 30px 0;
+		padding-left: 0;
+		border-top: 1px solid #dadce0;
+		list-style-type: none;
+		overflow: auto;
+	}
+
+	li {
+		line-height: 48px;
+		color: brown;
+		border-bottom: 1px solid #dadce0;
+		display: flex;
+		align-items: center;
+	}
+
+	li:before {
+		content: 'W';
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		border: 2px solid currentColor;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 14px;
+		margin-right: 10px;
+	}
+
+	li.readonly {
+		color: darkgreen;
+	}
+
+	li.readonly:before {
+		content: 'R';
+	}
+
+	a {
+		width: 50%;
+		padding: 0 24px;
+		line-height: 36px;
+		margin: auto;
+		color: #ffffff;
+		background: #1a73e8;
+		border-radius: 4px;
+		outline: none;
+		display: block;
+		text-align: center;
+		text-decoration: none;
+		font-weight: bold;
+		font-size: 15px;
+	}
+</style>
