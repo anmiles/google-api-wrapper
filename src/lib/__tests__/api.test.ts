@@ -108,7 +108,7 @@ describe('src/lib/api', () => {
 		it('should return instance wrapper for google api', async () => {
 			const instance = await api.getAPI('calendar', profile, { scopes, temporary : true });
 
-			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarAPI, auth : googleAuth });
+			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarAPI });
 		});
 
 		it('should warn when creating permanent credentials using non-readonly scopes', async () => {
@@ -227,6 +227,12 @@ describe('src/lib/api', () => {
 				const items = await instance.getItems((api) => api.calendarList, args);
 
 				expect(items).toEqual(items);
+			});
+
+			it('should throw if api was not initialized before getting items', async () => {
+				instance = new api.API('calendar', profile);
+
+				await expect(() => instance.getItems((api) => api.calendarList, args)).rejects.toEqual('API is not initialized. Call `init` before getting items.');
 			});
 		});
 	});

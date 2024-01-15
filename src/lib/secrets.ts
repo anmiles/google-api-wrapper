@@ -1,7 +1,7 @@
 import fs from 'fs';
 import http from 'http';
+import { open } from 'out-url';
 import enableDestroy from 'server-destroy';
-import open from 'open';
 import type GoogleApis from 'googleapis';
 import { warn } from '@anmiles/logger';
 import type { Secrets, AuthOptions } from '../types';
@@ -115,7 +115,7 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 			}
 		});
 
-		server.once('listening', () => {
+		server.once('listening', async () => {
 			warn('Please check your browser for further actions');
 			open(startURI);
 		});

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import http from 'http';
 import path from 'path';
-import open from 'open';
+import { open } from 'out-url';
 import type GoogleApis from 'googleapis';
 import logger from '@anmiles/logger';
 import emitter from 'event-emitter';
@@ -54,8 +54,8 @@ jest.mock<Partial<typeof path>>('path', () => ({
 	join : jest.fn().mockImplementation((...args) => args.join('/')),
 }));
 
-jest.mock('open', () => jest.fn().mockImplementation((url: string) => {
-	makeRequest(url.replace('http://localhost:6006', ''));
+jest.mock<{ open: typeof open }>('out-url', () => ({
+	open : jest.fn().mockImplementation(async (url) => makeRequest(url.replace('http://localhost:6006', ''))),
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({

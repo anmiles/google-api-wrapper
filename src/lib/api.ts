@@ -24,22 +24,17 @@ type CommonResponse<TItem> = {
 };
 
 class API<TKey extends keyof typeof allAPIs> {
-	api: ReturnType<typeof allAPIs[TKey]>;
-	private auth: GoogleApis.Common.OAuth2Client;
+	api: ReturnType<typeof allAPIs[TKey]> | undefined;
 
-	private apiName: TKey;
-	private profile: string;
-	private authOptions?: AuthOptions;
-
-	constructor(apiName: TKey, profile: string, authOptions?: AuthOptions) {
-		this.apiName     = apiName;
-		this.profile     = profile;
-		this.authOptions = authOptions;
-	}
+	constructor(
+		private apiName: TKey,
+		private profile: string,
+		private authOptions?: AuthOptions,
+	) {	}
 
 	async init() {
-		this.auth = await getAuth(this.profile, this.authOptions);
-		this.api  = allAPIs[this.apiName](this.auth) as ReturnType<typeof allAPIs[TKey]>;
+		const auth = await getAuth(this.profile, this.authOptions);
+		this.api   = allAPIs[this.apiName](auth) as ReturnType<typeof allAPIs[TKey]>;
 	}
 
 	async getItems<TItem>(selectAPI: (api: ReturnType<typeof allAPIs[TKey]>) => CommonAPI<TItem>, params: any, options?: CommonOptions): Promise<TItem[]> {
@@ -51,9 +46,15 @@ class API<TKey extends keyof typeof allAPIs> {
 			let response: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>;
 
 			try {
+				if (!this.api) {
+					throw 'API is not initialized. Call `init` before getting items.';
+				}
+
 				response = await selectAPI(this.api).list({ ...params, pageToken });
 			} catch (ex) {
-				if ((ex.message === 'invalid_grant' || ex.message === 'Invalid credentials') && !this.authOptions?.temporary) {
+				const message = ex instanceof Error ? ex.message : ex as string;
+
+				if ((message === 'invalid_grant' || message === 'Invalid credentials') && !this.authOptions?.temporary) {
 					warn('Access token stored is invalid, re-creating...');
 					deleteCredentials(this.profile);
 					await this.init();
