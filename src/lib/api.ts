@@ -24,7 +24,7 @@ type CommonResponse<TItem> = {
 
 class API<TGoogleAPI> {
 	private auth: GoogleApis.Common.OAuth2Client | undefined;
-	private api: TGoogleAPI | undefined;
+	api: TGoogleAPI | undefined;
 
 	constructor(
 		private getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,

@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.0.1](../../tags/v17.0.1) - 2024-01-16
+### Changed
+- Expose `api` from class `API`
+
 ## [17.0.0](../../tags/v17.0.0) - 2024-01-16
 ### Changed
 - Do not import all existing google APIs from one module
@@ -16,7 +20,7 @@ const calendarAPI = getAPI('calendar', profile);
 #### After:
 ```
 import { calendar } from 'googleapis/build/src/apis/calendar';
-const calendarAPI = getAPI((auth) => calendar({ version : 'v3', auth }),
+const calendarAPI = getAPI((auth) => calendar({ version : 'v3', auth })),
 ```
 
 
