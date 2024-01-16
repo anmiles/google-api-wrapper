@@ -17,7 +17,7 @@ function setProfiles(profiles: string[]): void {
 	fs.writeJSON(profilesFile, profiles);
 }
 
-function createProfile(profile: string): void {
+function createProfile(profile?: string): void {
 	if (!profile) {
 		throw 'Usage: `npm run create <profile>` where `profile` - is any profile name you want';
 	}
