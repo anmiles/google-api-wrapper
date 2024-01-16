@@ -1,4 +1,5 @@
-import { google } from 'googleapis';
+// eslint-disable-next-line camelcase
+import { calendar, calendar_v3 } from 'googleapis/build/src/apis/calendar';
 import logger from '@anmiles/logger';
 import sleep from '@anmiles/sleep';
 import auth from '../auth';
@@ -49,8 +50,8 @@ const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | und
 
 const args = { key : 'value' };
 
-const profile     = 'username1';
-const calendarAPI = {
+const profile = 'username1';
+const apis    = {
 	calendarList : getAPI(response, pageTokens),
 };
 
@@ -64,10 +65,8 @@ beforeEach(() => {
 	getListException.mockReturnValue(undefined);
 });
 
-jest.mock('googleapis', () => ({
-	google : {
-		calendar : jest.fn().mockImplementation(() => calendarAPI),
-	},
+jest.mock<{ calendar: typeof calendar }>('googleapis/build/src/apis/calendar', () => ({
+	calendar : jest.fn().mockImplementation(() => apis),
 }));
 
 jest.mock<Partial<typeof auth>>('../auth', () => ({
@@ -88,61 +87,42 @@ jest.mock<Partial<typeof sleep>>('@anmiles/sleep', () => jest.fn());
 describe('src/lib/api', () => {
 	describe('getAPI', () => {
 		it('should call getAuth', async () => {
-			await api.getAPI('calendar', profile);
+			await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile);
 
 			expect(auth.getAuth).toHaveBeenCalledWith(profile, undefined);
 		});
 
 		it('should pass temporariness and scopes', async () => {
-			await api.getAPI('calendar', profile, { scopes, temporary : true });
+			await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { scopes, temporary : true });
 
 			expect(auth.getAuth).toHaveBeenCalledWith(profile, { scopes, temporary : true });
 		});
 
-		it('should get google api', async () => {
-			await api.getAPI('calendar', profile);
-
-			expect(google.calendar).toHaveBeenCalledWith({ version : 'v3', auth : googleAuth });
-		});
-
-		it('should return instance wrapper for google api', async () => {
-			const instance = await api.getAPI('calendar', profile, { scopes, temporary : true });
-
-			expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true }, api : calendarAPI });
-		});
-
 		it('should warn when creating permanent credentials using non-readonly scopes', async () => {
-			await api.getAPI('calendar', profile, { scopes });
+			await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { scopes });
 
 			expect(logger.warn).toHaveBeenCalledWith('WARNING: trying to create permanent credentials using non-readonly scopes (scope1,scope2). Permanent credentials will be stored in the file and potentially might be re-used to modify your data');
 		});
 
 		it('should not warn when creating temporary credentials using non-readonly scopes', async () => {
-			await api.getAPI('calendar', profile, { scopes, temporary : true });
+			await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { scopes, temporary : true });
 
 			expect(logger.warn).not.toHaveBeenCalled();
 		});
 
 		it('should not warn when creating permanent credentials using readonly scopes only', async () => {
-			await api.getAPI('calendar', profile, { scopes : [ 'scope1.readonly', 'scope2.readonly' ], temporary : true });
+			await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { scopes : [ 'scope1.readonly', 'scope2.readonly' ], temporary : true });
 
 			expect(logger.warn).not.toHaveBeenCalled();
 		});
 	});
 
 	describe('API', () => {
-		let instance: InstanceType<typeof api.API<'calendar'>>;
+		// eslint-disable-next-line camelcase
+		let instance: InstanceType<typeof api.API<calendar_v3.Calendar>>;
 
 		beforeEach(async () => {
-			instance = await api.getAPI('calendar', profile);
-		});
-
-		describe('constructor', () => {
-			it('should return instance', async () => {
-				const instance = new api.API('calendar', profile, { scopes, temporary : true });
-
-				expect(instance).toEqual({ apiName : 'calendar', profile, authOptions : { scopes, temporary : true } });
-			});
+			instance = await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile);
 		});
 
 		describe('getItems', () => {
@@ -150,7 +130,7 @@ describe('src/lib/api', () => {
 				await instance.getItems((api) => api.calendarList, args);
 
 				pageTokens.forEach((pageToken) => {
-					expect(calendarAPI.calendarList.list).toHaveBeenCalledWith({ ...args, pageToken });
+					expect(apis.calendarList.list).toHaveBeenCalledWith({ ...args, pageToken });
 				});
 			});
 
@@ -212,7 +192,7 @@ describe('src/lib/api', () => {
 					// fail twice
 					getListException.mockReturnValueOnce(error);
 
-					const instance = await api.getAPI('calendar', profile, { temporary : true });
+					const instance = await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { temporary : true });
 					await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(error);
 				}
 			});
@@ -230,7 +210,7 @@ describe('src/lib/api', () => {
 			});
 
 			it('should throw if api was not initialized before getting items', async () => {
-				instance = new api.API('calendar', profile);
+				instance = new api.API((auth) => calendar({ version : 'v3', auth }), profile);
 
 				await expect(() => instance.getItems((api) => api.calendarList, args)).rejects.toEqual('API is not initialized. Call `init` before getting items.');
 			});
