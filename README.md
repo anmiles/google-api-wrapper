@@ -10,11 +10,6 @@ Provides quick interface for getting google API data. Support all google APIs as
 
 ## Usage
 
-``` bash
-> $ node ./auth.js
-> $ node ./videos.js
-```
-
 ### Authorization
 ``` js
 /* auth.js */
@@ -22,7 +17,9 @@ Provides quick interface for getting google API data. Support all google APIs as
 import { createProfile, login } from '@anmiles/google-api-wrapper';
 
 createProfile("username");
+
 // Persistent credentials will be generated and stored to credentials file.
+// Next `login` call will re-use persistent credentials without showing oauth window
 login("username");
 
 ```
@@ -38,6 +35,7 @@ require('./auth');
 
 getProfiles().map(async (profile) => {
 	// Persistent credentials will be generated and stored to credentials file.
+	// Next `getAPI` call will re-use persistent credentials without showing oauth window
 	const calendarAPI = getAPI((auth) => calendar({ version : 'v3', auth }), profile);
 	const events = await calendarAPI.getItems((api) => api.events, { timeMax: new Date().toISOString() });
 	events.forEach((event) => console.log(`Event: ${event.summary}`));
@@ -54,6 +52,7 @@ import { getProfiles, getAPI } from '@anmiles/google-api-wrapper';
 
 getProfiles().map(async (profile) => {
 	// Temporary credentials will be generated and not stored to credentials file
+	// Next `getAPI` will start authorization again with showing oauth window
 	const youtubeAPI = getAPI((auth) => youtube({ version : 'v3', auth }), profile, { temporary: true });
 	const videos = await youtubeAPI.getItems((api) => api.playlistItems, { playlistId : 'LL', part : [ 'snippet' ], maxResults : 50 });
 	videos.forEach((video) => console.log(`Downloaded: ${video.snippet?.title}`));
