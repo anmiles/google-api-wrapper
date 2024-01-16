@@ -27,6 +27,7 @@
     "test:report:coverage": "nyc report --nycrc-path ./coverage.config.js -t ./coverage --report-dir ./coverage"
   },
   "dependencies": {
+    "@anmiles/google-api-wrapper": "file:.",
     "@anmiles/logger": "^6.0.0",
     "@anmiles/prototypes": "^7.0.0",
     "@anmiles/sleep": "^3.0.0",
