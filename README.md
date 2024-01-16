@@ -1,7 +1,7 @@
 # @anmiles/google-api-wrapper
 
-Provides quick interface for getting google API data. Support all google APIs as per May 31, 2023.
-
+Provides quick interface for getting google API data.
+Incapsulates auth process and getting paged items in one call
 ----
 
 ## Installation
