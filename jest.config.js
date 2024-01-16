@@ -1,7 +1,10 @@
 module.exports = {
 	preset    : 'ts-jest',
 	transform : {
-		'^.+\\.tsx?$' : 'ts-jest',
+		'^.+\\.tsx?$' : [ 'ts-jest', {
+			isolatedModules : true, // otherwise tests are slowing down a lot because of googleapis
+			tsconfig        : './tsconfig.test.json',
+		} ],
 	},
 
 	clearMocks : true,
