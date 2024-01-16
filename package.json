@@ -1,6 +1,6 @@
 {
   "name": "@anmiles/google-api-wrapper",
-  "version": "16.0.2",
+  "version": "16.0.1",
   "description": "Provides quick interface for getting google API data",
   "keywords": [
     "google",
@@ -19,7 +19,7 @@
     "build": "rimraf dist && tsc -p ./tsconfig.build.json && copyfiles -u 1 src/templates/* dist/",
     "lint": "eslint --ext .js,.ts --ignore-path .gitignore .",
     "lint:fix": "npm run lint -- --fix",
-    "test": "jest --verbose",
+    "test": "node --max-old-space-size=2048 node_modules/jest/bin/jest.js --verbose",
     "test:coverage": "npm test -- --coverage",
     "test:ci": "npm test -- --ci --coverage",
     "test:watch": "npm test -- --watch",
