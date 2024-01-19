@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@anmiles/logger": "^6.0.0",
-    "@anmiles/prototypes": "^8.1.0",
+    "@anmiles/prototypes": "^9.0.0",
     "@anmiles/sleep": "^3.0.0",
     "googleapis": "^130.0.0",
     "out-url": "^1.1.3",
