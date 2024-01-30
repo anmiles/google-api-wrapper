@@ -1,15 +1,15 @@
 {
   "name": "@anmiles/google-api-wrapper",
   "version": "17.0.8",
-  "description": "Provides quick interface for getting google API data",
+  "description": "Wrapper around googleapis for getting data shortly",
   "keywords": [
     "google",
     "api",
     "auth"
   ],
   "author": "Anatoliy Oblaukhov",
-  "homepage": "https://gitlab.com/anmiles/lib/google-api-wrapper",
-  "repository": "gitlab:anmiles/lib/google-api-wrapper",
+  "homepage": "https://github.com/anmiles/google-api-wrapper",
+  "repository": "github:anmiles/google-api-wrapper",
   "license": "MIT",
   "engines": {
     "node": ">=18.14.2"
@@ -17,6 +17,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "rimraf dist && tsc -p ./tsconfig.build.json && copyfiles -u 1 src/templates/* dist/",
+    "build:ci": "tsc -noEmit -p ./tsconfig.build.json",
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "npm run lint -- --fix",
     "test": "jest --verbose",
@@ -27,21 +28,21 @@
     "test:report:coverage": "nyc report --nycrc-path ./coverage.config.js -t ./coverage --report-dir ./coverage"
   },
   "dependencies": {
-    "@anmiles/logger": "^6.0.0",
-    "@anmiles/prototypes": "^9.0.0",
-    "@anmiles/sleep": "^3.0.0",
+    "@anmiles/logger": "^6.0.2",
+    "@anmiles/prototypes": "^9.0.2",
+    "@anmiles/sleep": "^3.0.2",
     "googleapis": "^130.0.0",
     "out-url": "^1.2.2",
     "server-destroy": "^1.0.1"
   },
   "devDependencies": {
-    "@anmiles/eslint-config": "^5.0.0",
-    "@anmiles/tsconfig": "^2.0.0",
+    "@anmiles/eslint-config": "^5.0.2",
+    "@anmiles/tsconfig": "^2.0.1",
     "@types/event-emitter": "^0.3.5",
     "@types/jest": "^29.5.11",
     "@types/server-destroy": "^1.0.3",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
     "copyfiles": "^2.4.1",
     "eslint": "^8.56.0",
     "eslint-plugin-align-assignments": "^1.1.2",
@@ -51,7 +52,7 @@
     "jest": "^29.7.0",
     "nyc": "^15.1.0",
     "rimraf": "^5.0.5",
-    "ts-jest": "^29.1.1",
+    "ts-jest": "^29.1.2",
     "typescript": "^5.3.3"
   }
 }

@@ -1,7 +1,9 @@
 # @anmiles/google-api-wrapper
 
-Provides quick interface for getting google API data.
-Incapsulates auth process and getting paged items in one call
+Wrapper around googleapis for getting data shortly
+- provides quick interface for getting google API data
+- incapsulates auth process
+- combines getting paged items in one call
 ----
 
 ## Installation
