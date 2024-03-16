@@ -210,9 +210,9 @@ describe('src/lib/api', () => {
 			});
 
 			it('should return items data', async () => {
-				const items = await instance.getItems((api) => api.calendarList, params);
+				const returnedItems = await instance.getItems((api) => api.calendarList, params);
 
-				expect(items).toEqual(items);
+				expect(returnedItems).toEqual(items);
 			});
 
 			it('should throw if api was not initialized before getting items', async () => {

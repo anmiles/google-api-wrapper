@@ -13,10 +13,15 @@ type ListParams = Record<string, unknown> & {
 };
 
 interface CommonAPI<TItem> {
-	list : (
-		params?: ListParams,
-		options?: GoogleApis.Common.MethodOptions
-	) => Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
+	list: {
+		(
+			params?: ListParams,
+			options?: GoogleApis.Common.MethodOptions
+		) : Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
+		(
+			callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void
+		): void;
+	};
 }
 
 interface CommonResponse<TItem> {

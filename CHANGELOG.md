@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [18.0.1](../../tags/v18.0.1) - 2024-03-16
+### Changed
+- Fix inferring type by getItems
+
 ## [18.0.0](../../tags/v18.0.0) - 2024-03-16
 ### Changed
 - Update eslint config and raise minimum supported NodeJS version to match one in typescript-eslint plugin
