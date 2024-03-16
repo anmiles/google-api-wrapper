@@ -1,6 +1,6 @@
 {
 	"name": "@anmiles/google-api-wrapper",
-	"version": "18.0.0",
+	"version": "18.0.1",
 	"description": "Wrapper around googleapis for getting data shortly",
 	"keywords": [
 		"google",
