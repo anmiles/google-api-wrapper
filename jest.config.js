@@ -10,18 +10,10 @@ module.exports = {
 	clearMocks : true,
 
 	roots     : [ '<rootDir>/src' ],
-	testMatch : [ '<rootDir>/src/**/__tests__/*.test.ts' ],
+	testMatch : [ '<rootDir>/src/**/__tests__/*.test.{ts,tsx}' ],
 
 	collectCoverageFrom : [
-		'<rootDir>/src/**/*.ts',
-		'!<rootDir>/src/**/*.d.ts',
-		'!<rootDir>/src/*.ts',
-		'!<rootDir>/src/types/*.ts',
-
-		'!**/node_modules/**',
-		'!**/__tests__/**',
-
-		'!<rootDir>/coverage/**',
-		'!<rootDir>/dist/**',
+		'<rootDir>/src/**/*.{ts,tsx}',
+		'!<rootDir>/src/**/__tests__/**',
 	],
 };
