@@ -1,9 +1,9 @@
 import fs from 'fs';
-import path from 'path';
-import paths from '../paths';
-import renderer from '../renderer';
+import type path from 'path';
+import type paths from '../paths';
+import type renderer from '../renderer';
 
-const original = jest.requireActual('../renderer').default as typeof renderer;
+const original = jest.requireActual<{ default : typeof renderer }>('../renderer').default;
 
 type TemplateName = keyof typeof original.templates;
 type GetFileName<T extends TemplateName> = `${T}.html`;
@@ -28,7 +28,7 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 }));
 
 jest.mock<Partial<typeof path>>('path', () => ({
-	join : jest.fn().mockImplementation((...args) => args.join('/')),
+	join : jest.fn().mockImplementation((...paths: string[]) => paths.join('/')),
 }));
 
 jest.mock<Partial<typeof paths>>('../paths', () => ({
@@ -72,9 +72,9 @@ describe('src/lib/renderer', () => {
 		});
 
 		it('should replace non-existing template variable with empty string', () => {
-			const values = { name : 'scope.readonly' };
+			const values = { name : 'scope.readonly', type : undefined, title : undefined };
 
-			const result = original.render('scope', values as any);
+			const result = original.render('scope', values);
 
 			expect(result).toEqual('scope type = () title = () name = (scope.readonly)');
 		});

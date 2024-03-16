@@ -1,12 +1,14 @@
-// eslint-disable-next-line camelcase
-import { calendar, calendar_v3 } from 'googleapis/build/src/apis/calendar';
+import type GoogleApis from 'googleapis';
+import type { calendar_v3 } from 'googleapis/build/src/apis/calendar';
+import { calendar } from 'googleapis/build/src/apis/calendar';
 import logger from '@anmiles/logger';
 import sleep from '@anmiles/sleep';
 import auth from '../auth';
 import secrets from '../secrets';
+import type { CommonResponse } from '../api';
 import api from '../api';
 
-const items: Array<{ data: string}> = [
+const items: Array<{ data : string }> = [
 	{ data : 'first' },
 	{ data : 'second' },
 	{ data : 'third' },
@@ -25,8 +27,11 @@ const pageTokens = [
 	'token2',
 ];
 
-const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | undefined>) => ({
-	list : jest.fn().mockImplementation(async ({ pageToken }: {pageToken?: string}) => {
+const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | undefined>): {
+	list   : jest.Mock;
+	update : jest.Mock;
+} => ({
+	list : jest.fn().mockImplementation(({ pageToken }: { pageToken? : string }): Pick<GoogleApis.Common.GaxiosResponse<CommonResponse<unknown>>, 'data'> => {
 		const listException = getListException();
 
 		if (listException) {
@@ -37,10 +42,12 @@ const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | und
 
 		return {
 			data : {
-				items         : items[index],
+				items         : items[index]!,
 				nextPageToken : pageTokens[index + 1],
-				pageInfo      : !items[index] ? null : {
-					totalResults : items.reduce((sum, list) => sum + (list?.length || 0), 0),
+				pageInfo      : {
+					totalResults : !items[index]
+						? null
+						: items.reduce((sum, list) => sum + (list?.length ?? 0), 0),
 				},
 			},
 		};
@@ -48,7 +55,7 @@ const getAPI = <T>(items: Array<Array<T> | null>, pageTokens: Array<string | und
 	update : jest.fn(),
 });
 
-const args = { key : 'value' };
+const params = { key : 'value' };
 
 const profile = 'username1';
 const apis    = {
@@ -59,13 +66,13 @@ const googleAuth = 'googleAuth';
 
 const scopes = [ 'scope1', 'scope2' ];
 
-const getListException: jest.Mock<Error | undefined> = jest.fn();
+const getListException = jest.fn() as jest.Mock<Error | undefined>;
 
 beforeEach(() => {
 	getListException.mockReturnValue(undefined);
 });
 
-jest.mock<{ calendar: typeof calendar }>('googleapis/build/src/apis/calendar', () => ({
+jest.mock<{ calendar : typeof calendar }>('googleapis/build/src/apis/calendar', () => ({
 	calendar : jest.fn().mockImplementation(() => apis),
 }));
 
@@ -101,7 +108,7 @@ describe('src/lib/api', () => {
 		it('should warn when creating permanent credentials using non-readonly scopes', async () => {
 			await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { scopes });
 
-			expect(logger.warn).toHaveBeenCalledWith('WARNING: trying to create permanent credentials using non-readonly scopes (scope1,scope2). Permanent credentials will be stored in the file and potentially might be re-used to modify your data');
+			expect(logger.warn).toHaveBeenCalledWith('WARNING: trying to create permanent credentials using non-readonly scopes (scope1, scope2). Permanent credentials will be stored in the file and potentially might be re-used to modify your data');
 		});
 
 		it('should not warn when creating temporary credentials using non-readonly scopes', async () => {
@@ -118,7 +125,6 @@ describe('src/lib/api', () => {
 	});
 
 	describe('API', () => {
-		// eslint-disable-next-line camelcase
 		let instance: InstanceType<typeof api.API<calendar_v3.Calendar>>;
 
 		beforeEach(async () => {
@@ -127,15 +133,15 @@ describe('src/lib/api', () => {
 
 		describe('getItems', () => {
 			it('should call API list method for each page', async () => {
-				await instance.getItems((api) => api.calendarList, args);
+				await instance.getItems((api) => api.calendarList, params);
 
 				pageTokens.forEach((pageToken) => {
-					expect(apis.calendarList.list).toHaveBeenCalledWith({ ...args, pageToken });
+					expect(apis.calendarList.list).toHaveBeenCalledWith({ ...params, pageToken });
 				});
 			});
 
 			it('should output progress by default', async () => {
-				await instance.getItems((api) => api.calendarList, args);
+				await instance.getItems((api) => api.calendarList, params);
 
 				expect(logger.log).toHaveBeenCalledTimes(response.length);
 				expect(logger.log).toHaveBeenCalledWith('Getting items (2 of 4)...');
@@ -144,13 +150,13 @@ describe('src/lib/api', () => {
 			});
 
 			it('should not output progress if hidden', async () => {
-				await instance.getItems((api) => api.calendarList, args, { hideProgress : true });
+				await instance.getItems((api) => api.calendarList, params, { hideProgress : true });
 
 				expect(logger.log).not.toHaveBeenCalled();
 			});
 
 			it('should sleep after reach request', async () => {
-				await instance.getItems((api) => api.calendarList, args);
+				await instance.getItems((api) => api.calendarList, params);
 
 				expect(sleep).toHaveBeenCalledTimes(response.length);
 				expect(sleep).toHaveBeenCalledWith(300);
@@ -160,7 +166,7 @@ describe('src/lib/api', () => {
 				const getAuthSpy  = jest.spyOn(auth, 'getAuth');
 				const getItemsSpy = jest.spyOn(instance, 'getItems');
 
-				await instance.getItems((api) => api.calendarList, args);
+				await instance.getItems((api) => api.calendarList, params);
 
 				expect(getAuthSpy).toHaveBeenCalledTimes(1);
 				expect(getItemsSpy).toHaveBeenCalledTimes(1);
@@ -177,7 +183,7 @@ describe('src/lib/api', () => {
 					getAuthSpy.mockClear();
 					getItemsSpy.mockClear();
 
-					await instance.getItems((api) => api.calendarList, args);
+					await instance.getItems((api) => api.calendarList, params);
 
 					expect(logger.warn).toHaveBeenCalledWith('Access token stored is invalid, re-creating...');
 					expect(secrets.deleteCredentials).toHaveBeenCalledWith(profile);
@@ -193,18 +199,18 @@ describe('src/lib/api', () => {
 					getListException.mockReturnValueOnce(error);
 
 					const instance = await api.getAPI((auth) => calendar({ version : 'v3', auth }), profile, { temporary : true });
-					await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(error);
+					await expect(instance.getItems((api) => api.calendarList, params)).rejects.toEqual(error);
 				}
 			});
 
 			it('should re-throw API exception if not invalid_grant or Invalid credentials', async () => {
 				const error = new Error('random exception');
 				getListException.mockReturnValueOnce(error);
-				await expect(instance.getItems((api) => api.calendarList, args)).rejects.toEqual(error);
+				await expect(instance.getItems((api) => api.calendarList, params)).rejects.toEqual(error);
 			});
 
 			it('should return items data', async () => {
-				const items = await instance.getItems((api) => api.calendarList, args);
+				const items = await instance.getItems((api) => api.calendarList, params);
 
 				expect(items).toEqual(items);
 			});
@@ -212,7 +218,7 @@ describe('src/lib/api', () => {
 			it('should throw if api was not initialized before getting items', async () => {
 				instance = new api.API((auth) => calendar({ version : 'v3', auth }), profile);
 
-				await expect(() => instance.getItems((api) => api.calendarList, args)).rejects.toEqual('API is not initialized. Call `init` before getting items.');
+				await expect(async () => instance.getItems((api) => api.calendarList, params)).rejects.toEqual(new Error('API is not initialized. Call `init` before getting items.'));
 			});
 		});
 	});

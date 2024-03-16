@@ -4,15 +4,13 @@ import { open } from 'out-url';
 import enableDestroy from 'server-destroy';
 import type GoogleApis from 'googleapis';
 import { warn } from '@anmiles/logger';
-import type { Secrets, AuthOptions } from '../types';
+import type { Secrets } from '../types/secrets';
+import type { AuthOptions } from '../types/options';
 import '@anmiles/prototypes';
 import { getScopesFile, getSecretsFile, getCredentialsFile } from './paths';
 import { renderAuth, renderDone } from './renderer';
 
 import secrets from './secrets';
-
-export { getSecrets, getCredentials, deleteCredentials };
-export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, deleteCredentials, checkSecrets, getSecretsError, getScopesError };
 
 const port                = 6006;
 const host                = `localhost:${port}`;
@@ -24,7 +22,7 @@ const serverRetryInterval = 1000;
 function getScopes(): string[] {
 	const scopesFile = getScopesFile();
 	const scopes     = fs.getJSON<string[]>(scopesFile, () => {
-		throw secrets.getScopesError(scopesFile);
+		throw new Error(secrets.getScopesError(scopesFile));
 	});
 	return scopes;
 }
@@ -32,7 +30,7 @@ function getScopes(): string[] {
 function getSecrets(profile: string): Secrets {
 	const secretsFile   = getSecretsFile(profile);
 	const secretsObject = fs.getJSON<Secrets>(secretsFile, () => {
-		throw secrets.getSecretsError(profile, secretsFile);
+		throw new Error(secrets.getSecretsError(profile, secretsFile));
 	});
 	secrets.checkSecrets(profile, secretsObject, secretsFile);
 	return secretsObject;
@@ -48,12 +46,12 @@ async function getCredentials(profile: string, auth: GoogleApis.Common.OAuth2Cli
 	return fs.getJSONAsync(credentialsFile, async () => {
 		const refreshToken = fs.existsSync(credentialsFile) ? fs.readJSON<GoogleApis.Auth.Credentials>(credentialsFile).refresh_token : undefined;
 		const credentials  = await secrets.createCredentials(profile, auth, options, refreshToken ? undefined : 'consent');
-		// eslint-disable-next-line camelcase
 		return { refresh_token : refreshToken, ...credentials };
 	}, secrets.validateCredentials);
 }
 
-async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Promise<{ isValid: boolean, validationError?: string}> {
+// eslint-disable-next-line @typescript-eslint/require-await -- pass sync function into async context
+async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Promise<{ isValid : boolean; validationError? : string }> {
 	if (!credentials.access_token) {
 		return { isValid : false, validationError : 'Credentials does not have access_token' };
 	}
@@ -74,11 +72,10 @@ async function validateCredentials(credentials: GoogleApis.Auth.Credentials): Pr
 }
 
 async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Client, options?: AuthOptions, prompt?: GoogleApis.Auth.GenerateAuthUrlOpts['prompt']): Promise<GoogleApis.Auth.Credentials> {
-	const scope = options?.scopes || secrets.getScopes();
+	const scope = options?.scopes ?? secrets.getScopes();
 
 	return new Promise((resolve) => {
 		const authUrl = auth.generateAuthUrl({
-			// eslint-disable-next-line camelcase
 			access_type : 'offline',
 			prompt,
 			scope,
@@ -87,7 +84,7 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 		const server = http.createServer();
 		enableDestroy(server);
 
-		server.on('request', async (request, response) => {
+		server.on('request', (request, response) => {
 			if (!request.url) {
 				response.end('');
 				return;
@@ -103,8 +100,11 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 
 			response.end(renderDone({ profile }));
 			server.destroy();
-			const { tokens } = await auth.getToken(code);
-			resolve(tokens);
+
+			void (async () => {
+				const { tokens } = await auth.getToken(code);
+				resolve(tokens);
+			})();
 		});
 
 		server.on('error', (error: NodeJS.ErrnoException) => {
@@ -115,9 +115,9 @@ async function createCredentials(profile: string, auth: GoogleApis.Auth.OAuth2Cl
 			}
 		});
 
-		server.once('listening', async () => {
+		server.once('listening', () => {
 			warn('Please check your browser for further actions');
-			open(startURI);
+			void open(startURI);
 		});
 
 		server.listen(port);
@@ -132,21 +132,21 @@ function deleteCredentials(profile: string): void {
 	}
 }
 
-function checkSecrets(profile: string, secretsObject: Secrets, secretsFile: string): true | void {
+function checkSecrets(profile: string, secretsObject: Secrets, secretsFile: string): true {
 	if (secretsObject.web.redirect_uris[0] === callbackURI) {
 		return true;
 	}
-	throw `Error in credentials file: redirect URI should be ${callbackURI}.\n${secrets.getSecretsError(profile, secretsFile)}`;
+	throw new Error(`Error in credentials file: redirect URI should be ${callbackURI}.\n${secrets.getSecretsError(profile, secretsFile)}`);
 }
 
-function getScopesError(scopesFile: string) {
+function getScopesError(scopesFile: string): string {
 	return [
 		`File ${scopesFile} not found!`,
 		`This application had to have pre-defined file ${scopesFile} that will declare needed scopes`,
 	].join('\n');
 }
 
-function getSecretsError(profile: string, secretsFile: string) {
+function getSecretsError(profile: string, secretsFile: string): string {
 	return [
 		`File ${secretsFile} not found!`,
 		'Here is how to obtain it:',
@@ -182,3 +182,6 @@ function getSecretsError(profile: string, secretsFile: string) {
 		'Then start this script again',
 	].join('\n');
 }
+
+export { getSecrets, getCredentials, deleteCredentials };
+export default { getScopes, getSecrets, getCredentials, validateCredentials, createCredentials, deleteCredentials, checkSecrets, getSecretsError, getScopesError };

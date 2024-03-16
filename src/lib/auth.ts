@@ -1,16 +1,13 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
 import { info, warn } from '@anmiles/logger';
-import type { CommonOptions, AuthOptions } from '../types';
+import type { CommonOptions, AuthOptions } from '../types/options';
 import { getProfiles } from './profiles';
 import { getCredentials, getSecrets } from './secrets';
 
 import auth from './auth';
 
-export { login, getAuth };
-export default { login, getAuth };
-
-async function login(profile?: string, options?: CommonOptions & AuthOptions): Promise<void> {
+async function login(profile?: string, options?: AuthOptions & CommonOptions): Promise<void> {
 	const profiles = getProfiles().filter((p) => !profile || p === profile);
 
 	for (const profile of profiles) {
@@ -40,3 +37,6 @@ async function getAuth(profile: string, options?: AuthOptions): Promise<GoogleAp
 	google.options({ auth : googleAuth });
 	return googleAuth;
 }
+
+export { login, getAuth };
+export default { login, getAuth };

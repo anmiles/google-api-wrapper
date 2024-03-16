@@ -1,17 +1,18 @@
 import fs from 'fs';
 import http from 'http';
-import path from 'path';
+import type path from 'path';
 import { open } from 'out-url';
 import type GoogleApis from 'googleapis';
 import logger from '@anmiles/logger';
 import emitter from 'event-emitter';
-import renderer from '../renderer';
-import paths from '../paths';
-import type { Secrets } from '../../types';
+import type renderer from '../renderer';
+import type paths from '../paths';
+import type { Secrets } from '../../types/secrets';
 import '@anmiles/prototypes';
 
 import secrets from '../secrets';
-const original = jest.requireActual('../secrets').default as typeof secrets;
+
+const original = jest.requireActual<{ default : typeof secrets }>('../secrets').default;
 jest.mock<typeof secrets>('../secrets', () => ({
 	getScopes           : jest.fn().mockImplementation(() => scopesJSON),
 	getSecrets          : jest.fn().mockImplementation(() => secretsJSON),
@@ -25,7 +26,7 @@ jest.mock<typeof secrets>('../secrets', () => ({
 }));
 
 jest.mock<Partial<typeof renderer>>('../renderer', () => ({
-	renderAuth : jest.fn().mockImplementation(({ profile, authUrl, scope } : { profile: string, authUrl: string, scope: string[] }) => `content = profile = ${profile} authUrl = ${authUrl} scope = ${scope.join('|')}`),
+	renderAuth : jest.fn().mockImplementation(({ profile, authUrl, scope } : { profile : string; authUrl : string; scope : string[] }) => `content = profile = ${profile} authUrl = ${authUrl} scope = ${scope.join('|')}`),
 	renderDone : jest.fn().mockImplementation(() => 'content = done'),
 }));
 
@@ -33,10 +34,10 @@ jest.mock<Partial<typeof http>>('http', () => ({
 	createServer : jest.fn().mockImplementation(() => server),
 }));
 
-let server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>;
+let server: http.Server;
 let response: http.ServerResponse;
 
-async function makeRequest(url: string | undefined) {
+function makeRequest(url: string | undefined): void {
 	server.emit('request', {
 		url,
 		headers : {
@@ -51,11 +52,13 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 }));
 
 jest.mock<Partial<typeof path>>('path', () => ({
-	join : jest.fn().mockImplementation((...args) => args.join('/')),
+	join : jest.fn().mockImplementation((...paths: string[]) => paths.join('/')),
 }));
 
-jest.mock<{ open: typeof open }>('out-url', () => ({
-	open : jest.fn().mockImplementation(async (url) => makeRequest(url.replace('http://localhost:6006', ''))),
+jest.mock<{ open : typeof open }>('out-url', () => ({
+	open : jest.fn().mockImplementation((url: string) => {
+		makeRequest(url.replace('http://localhost:6006', ''));
+	}),
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
@@ -92,7 +95,6 @@ const scopesJSON: string[] = [
 
 const secretsJSON: Secrets = {
 	web : {
-		/* eslint-disable camelcase */
 		client_id                   : 'client_id.apps.googleusercontent.com',
 		project_id                  : 'project_id',
 		auth_uri                    : 'https://accounts.google.com/o/oauth2/auth',
@@ -100,16 +102,14 @@ const secretsJSON: Secrets = {
 		auth_provider_x509_cert_url : 'https://www.googleapis.com/oauth2/v1/certs',
 		client_secret               : 'client_secret',
 		redirect_uris               : [ callbackURI ],
-		/* eslint-enable camelcase */
 	},
 };
 
 const credentialsJSON: GoogleApis.Auth.Credentials = {
-	// eslint-disable-next-line camelcase
 	access_token : 'access_token222',
 };
 
-let json: any;
+let json: unknown;
 
 const code    = 'code';
 const authUrl = 'https://authUrl';
@@ -120,26 +120,14 @@ const auth    = {
 
 let exists: boolean;
 
-let getJSONSpy: jest.SpyInstance;
-let getJSONAsyncSpy: jest.SpyInstance;
-let readJSONSpy: jest.SpyInstance;
-
-beforeAll(() => {
-	getJSONSpy      = jest.spyOn(fs, 'getJSON');
-	getJSONAsyncSpy = jest.spyOn(fs, 'getJSONAsync');
-	readJSONSpy     = jest.spyOn(fs, 'readJSON');
-});
+const getJSONSpy      = jest.spyOn(fs, 'getJSON').mockReturnValue(json);
+const getJSONAsyncSpy = jest.spyOn(fs, 'getJSONAsync').mockResolvedValue(json);
+const readJSONSpy     = jest.spyOn(fs, 'readJSON').mockReturnValue(json);
 
 beforeEach(() => {
-	getJSONSpy.mockImplementation(() => json);
-	getJSONAsyncSpy.mockImplementation(() => json);
-	readJSONSpy.mockImplementation(() => json);
-});
-
-afterAll(() => {
-	getJSONSpy.mockRestore();
-	getJSONAsyncSpy.mockRestore();
-	readJSONSpy.mockRestore();
+	getJSONSpy.mockReturnValue(json);
+	getJSONAsyncSpy.mockResolvedValue(json);
+	readJSONSpy.mockReturnValue(json);
 });
 
 describe('src/lib/secrets', () => {
@@ -152,13 +140,13 @@ describe('src/lib/secrets', () => {
 			original.getScopes();
 
 			expect(getJSONSpy).toHaveBeenCalled();
-			expect(getJSONSpy.mock.calls[0][0]).toEqual(scopesFile);
+			expect(getJSONSpy.mock.calls[0]?.[0]).toEqual(scopesFile);
 		});
 
 		it('should fallback to error', () => {
 			original.getScopes();
 
-			expect(getJSONSpy.mock.calls[0][1]).toThrow(scopesError);
+			expect(getJSONSpy.mock.calls[0]?.[1]).toThrow(scopesError);
 		});
 
 		it('should return scopes', () => {
@@ -177,13 +165,13 @@ describe('src/lib/secrets', () => {
 			original.getSecrets(profile);
 
 			expect(getJSONSpy).toHaveBeenCalled();
-			expect(getJSONSpy.mock.calls[0][0]).toEqual(secretsFile);
+			expect(getJSONSpy.mock.calls[0]?.[0]).toEqual(secretsFile);
 		});
 
 		it('should fallback to error', () => {
 			original.getSecrets(profile);
 
-			expect(getJSONSpy.mock.calls[0][1]).toThrow(secretsError);
+			expect(getJSONSpy.mock.calls[0]?.[1]).toThrow(secretsError);
 		});
 
 		it('should check secrets', () => {
@@ -209,14 +197,14 @@ describe('src/lib/secrets', () => {
 			await original.getCredentials(profile, auth);
 
 			expect(getJSONAsyncSpy).toHaveBeenCalled();
-			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
+			expect(getJSONAsyncSpy.mock.calls[0]?.[0]).toEqual(credentialsFile);
 		});
 
 		it('should get json from credentials file if temporariness not set', async () => {
 			await original.getCredentials(profile, auth, { temporary : false });
 
 			expect(getJSONAsyncSpy).toHaveBeenCalled();
-			expect(getJSONAsyncSpy.mock.calls[0][0]).toEqual(credentialsFile);
+			expect(getJSONAsyncSpy.mock.calls[0]?.[0]).toEqual(credentialsFile);
 		});
 
 		it('should not get json from credentials file if temporariness set', async () => {
@@ -232,8 +220,8 @@ describe('src/lib/secrets', () => {
 
 			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
-			const fallback = getJSONAsyncSpy.mock.calls[0][1];
-			const result   = await fallback();
+			const fallback = getJSONAsyncSpy.mock.calls[0]?.[1];
+			const result   = await fallback?.();
 
 			expect(readJSONSpy).not.toHaveBeenCalled();
 			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, 'consent');
@@ -247,8 +235,8 @@ describe('src/lib/secrets', () => {
 
 			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
-			const fallback = getJSONAsyncSpy.mock.calls[0][1];
-			const result   = await fallback();
+			const fallback = getJSONAsyncSpy.mock.calls[0]?.[1];
+			const result   = await fallback?.();
 
 			expect(readJSONSpy).not.toHaveBeenCalled();
 			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, { temporary : false }, 'consent');
@@ -262,8 +250,8 @@ describe('src/lib/secrets', () => {
 
 			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
-			const fallback = getJSONAsyncSpy.mock.calls[0][1];
-			const result   = await fallback();
+			const fallback = getJSONAsyncSpy.mock.calls[0]?.[1];
+			const result   = await fallback?.();
 
 			expect(readJSONSpy).toHaveBeenCalledWith(credentialsFile);
 			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, 'consent');
@@ -272,37 +260,31 @@ describe('src/lib/secrets', () => {
 
 		it('should call createCredentials without consent in fallback and replace refresh_token if existing credentials have refresh token', async () => {
 			exists = true;
-			// eslint-disable-next-line camelcase
 			readJSONSpy.mockReturnValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token' });
 
 			await original.getCredentials(profile, auth);
 
 			expect(secrets.createCredentials).not.toHaveBeenCalled();
 
-			const fallback = getJSONAsyncSpy.mock.calls[0][1];
-			const result   = await fallback();
+			const fallback = getJSONAsyncSpy.mock.calls[0]?.[1];
+			const result   = await fallback?.();
 
 			expect(readJSONSpy).toHaveBeenCalledWith(credentialsFile);
-			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, undefined);
-			// eslint-disable-next-line camelcase
 			expect(result).toEqual({ ... credentialsJSON, refresh_token : 'refresh_token' });
 		});
 
 		it('should call createCredentials without consent in fallback and leave refresh token if existing credentials have refresh token', async () => {
 			exists = true;
-			// eslint-disable-next-line camelcase
 			readJSONSpy.mockReturnValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token' });
-			// eslint-disable-next-line camelcase
 			jest.spyOn(secrets, 'createCredentials').mockResolvedValueOnce({ ...credentialsJSON, refresh_token : 'refresh_token_exists' });
 
 			await original.getCredentials(profile, auth);
 
-			const fallback = getJSONAsyncSpy.mock.calls[0][1];
-			const result   = await fallback();
+			const fallback = getJSONAsyncSpy.mock.calls[0]?.[1];
+			const result   = await fallback?.();
 
 			expect(readJSONSpy).toHaveBeenCalledWith(credentialsFile);
 			expect(secrets.createCredentials).toHaveBeenCalledWith(profile, auth, undefined, undefined);
-			// eslint-disable-next-line camelcase
 			expect(result).toEqual({ ...credentialsJSON, refresh_token : 'refresh_token_exists' });
 		});
 	});
@@ -313,26 +295,22 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should return false if no refresh token', async () => {
-			// eslint-disable-next-line camelcase
 			expect(await original.validateCredentials({ access_token : 'token' })).toEqual({ isValid : false, validationError : 'Credentials does not have refresh_token' });
 		});
 
 		it('should return false if no expiration date', async () => {
-			// eslint-disable-next-line camelcase
 			expect(await original.validateCredentials({ access_token : 'token', refresh_token : 'token' })).toEqual({ isValid : false, validationError : 'Credentials does not have expiry_date' });
 		});
 
 		it('should return true if credentials are not more than 1 week ago', async () => {
 			const expiryDate = new Date();
 			expiryDate.setDate(expiryDate.getDate() - 6);
-			// eslint-disable-next-line camelcase
 			expect(await original.validateCredentials({ access_token : 'token', refresh_token : 'token', expiry_date : expiryDate.getTime() })).toEqual({ isValid : true });
 		});
 
 		it('should return false if credentials are more than 1 week ago', async () => {
 			const expiryDate = new Date();
 			expiryDate.setDate(expiryDate.getDate() - 8);
-			// eslint-disable-next-line camelcase
 			expect(await original.validateCredentials({ access_token : 'token', refresh_token : 'token', expiry_date : expiryDate.getTime() })).toEqual({ isValid : false, validationError : 'Credentials expired' });
 		});
 	});
@@ -370,11 +348,10 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should generate authUrl', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			await Promise.resolve();
 
 			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
-				// eslint-disable-next-line camelcase
 				access_type : 'offline',
 				prompt      : undefined,
 				scope      	: [
@@ -385,11 +362,10 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should generate authUrl and require consent if explicitly asked', async () => {
-			original.createCredentials(profile, auth, { temporary : true }, 'consent');
+			void original.createCredentials(profile, auth, { temporary : true }, 'consent');
 			await Promise.resolve();
 
 			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
-				// eslint-disable-next-line camelcase
 				access_type : 'offline',
 				prompt      : 'consent',
 				scope      	: [
@@ -400,11 +376,10 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should generate authUrl with custom scopes', async () => {
-			original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
+			void original.createCredentials(profile, auth, { scopes : [ 'scope1', 'scope2' ] });
 			await Promise.resolve();
 
 			expect(auth.generateAuthUrl).toHaveBeenCalledWith({
-				// eslint-disable-next-line camelcase
 				access_type : 'offline',
 				prompt      : undefined,
 				scope      	: [ 'scope1', 'scope2' ],
@@ -412,7 +387,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should create server on 6006 port', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			await Promise.resolve();
 
 			expect(http.createServer).toHaveBeenCalled();
@@ -420,7 +395,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should open browser page and warn about it once listening', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			await Promise.resolve();
 
 			server.emit('listening');
@@ -430,7 +405,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should not open browser page and warn about it until listening', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			await Promise.resolve();
 
 			expect(open).not.toHaveBeenCalled();
@@ -438,7 +413,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should show nothing on the browser page if request.url is empty', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			makeRequest('');
 			await Promise.resolve();
 
@@ -446,7 +421,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should show opening instructions if opened the home page', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			makeRequest('/');
 			await Promise.resolve();
 
@@ -454,7 +429,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should ask to close webpage', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			makeRequest(tokenUrl);
 			await Promise.resolve();
 
@@ -462,13 +437,15 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should close server and destroy all connections if request.url is truthy', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			makeRequest(tokenUrl);
 			await Promise.resolve();
 
 			expect(server.close).toHaveBeenCalled();
 
-			connections.forEach((connection) => expect(connection.destroy).toHaveBeenCalled());
+			connections.forEach((connection) => {
+				expect(connection.destroy).toHaveBeenCalled();
+			});
 		});
 
 		it('should close server and resolve if request.url is truthy', async () => {
@@ -480,7 +457,7 @@ describe('src/lib/secrets', () => {
 		});
 
 		it('should not close server if request.url is falsy', async () => {
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			makeRequest(undefined);
 			await Promise.resolve();
 
@@ -490,14 +467,14 @@ describe('src/lib/secrets', () => {
 		it('should re-throw a server error if error is not EADDRINUSE', () => {
 			const error = { code : 'RANDOM', message : 'random error' } as NodeJS.ErrnoException;
 
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			expect(() => server.emit('error', error)).toThrow(error.message);
 		});
 
 		it('should not re-throw a server error and try to listen again in 1000 seconds if error is EADDRINUSE', () => {
 			const error = { code : 'EADDRINUSE' } as NodeJS.ErrnoException;
 
-			original.createCredentials(profile, auth);
+			void original.createCredentials(profile, auth);
 			expect(server.listen).toHaveBeenCalledTimes(1);
 			expect(() => server.emit('error', error)).not.toThrow();
 			expect(server.listen).toHaveBeenCalledTimes(1);
@@ -538,7 +515,7 @@ describe('src/lib/secrets', () => {
 		it('should output error if redirect_uri is incorrect', () => {
 			const wrongSecretsJSON                = { ...secretsJSON };
 			wrongSecretsJSON.web.redirect_uris[0] = wrongRedirectURI;
-			const func                            = () => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
+			const func                            = (): true => original.checkSecrets(profile, wrongSecretsJSON, secretsFile);
 
 			expect(func).toThrow('Error in credentials file: redirect URI should be http://localhost:6006/oauthcallback.\nsecretsError');
 		});

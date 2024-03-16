@@ -1,43 +1,48 @@
 import type GoogleApis from 'googleapis';
 import { log, warn } from '@anmiles/logger';
 import sleep from '@anmiles/sleep';
-import type { AuthOptions, CommonOptions } from '../types';
+import type { AuthOptions, CommonOptions } from '../types/options';
 import { getAuth } from './auth';
 import { deleteCredentials } from './secrets';
+import '@anmiles/prototypes';
 
 const requestInterval = 300;
 
-type CommonAPI<TItem> = {
-	list: {
-		(params?: { pageToken: string | undefined }, options?: GoogleApis.Common.MethodOptions): Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
-		(callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void): void;
-	}
+type ListParams = Record<string, unknown> & {
+	pageToken : string | undefined;
 };
 
-type CommonResponse<TItem> = {
-	items?: TItem[],
+interface CommonAPI<TItem> {
+	list : (
+		params?: ListParams,
+		options?: GoogleApis.Common.MethodOptions
+	) => Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
+}
+
+interface CommonResponse<TItem> {
+	items?    : TItem[];
 	pageInfo?: {
-		totalResults?: number | null | undefined
-	},
-	nextPageToken?: string | null | undefined
-};
+		totalResults? : number | null | undefined;
+	};
+	nextPageToken? : string | null | undefined;
+}
 
 class API<TGoogleAPI> {
-	private auth: GoogleApis.Common.OAuth2Client | undefined;
-	api: TGoogleAPI | undefined;
+	api          : TGoogleAPI | undefined;
+	private auth : GoogleApis.Common.OAuth2Client | undefined;
 
 	constructor(
-		private getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
-		private profile: string,
-		private authOptions?: AuthOptions,
+		private readonly getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
+		private readonly profile: string,
+		private readonly authOptions?: AuthOptions,
 	) {	}
 
-	async init() {
+	async init(): Promise<void> {
 		this.auth = await getAuth(this.profile, this.authOptions);
 		this.api  = this.getter(this.auth);
 	}
 
-	async getItems<TItem>(selectAPI: (api: TGoogleAPI) => CommonAPI<TItem>, params: any, options?: CommonOptions): Promise<TItem[]> {
+	async getItems<TItem>(selectAPI: (api: TGoogleAPI) => CommonAPI<TItem>, params: object, options?: CommonOptions): Promise<TItem[]> {
 		const items: TItem[] = [];
 
 		let pageToken: string | null | undefined = undefined;
@@ -47,14 +52,14 @@ class API<TGoogleAPI> {
 
 			try {
 				if (!this.api) {
-					throw 'API is not initialized. Call `init` before getting items.';
+					throw new Error('API is not initialized. Call `init` before getting items.');
 				}
 
 				const selectedAPI = selectAPI(this.api);
 
 				response = await selectedAPI.list({ ...params, pageToken });
 			} catch (ex) {
-				const message = ex instanceof Error ? ex.message : ex as string;
+				const { message } = Error.parse(ex);
 
 				if ((message === 'invalid_grant' || message === 'Invalid credentials') && !this.authOptions?.temporary) {
 					warn('Access token stored is invalid, re-creating...');
@@ -69,7 +74,7 @@ class API<TGoogleAPI> {
 			response.data.items?.forEach((item) => items.push(item));
 
 			if (!options?.hideProgress) {
-				log(`Getting items (${items.length} of ${response.data.pageInfo?.totalResults || 'many'})...`);
+				log(`Getting items (${items.length} of ${response.data.pageInfo?.totalResults ?? 'many'})...`);
 			}
 
 			await sleep(requestInterval);
@@ -80,12 +85,16 @@ class API<TGoogleAPI> {
 	}
 }
 
-async function getAPI<TGoogleAPI>(getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI, profile: string, authOptions?: AuthOptions): Promise<API<TGoogleAPI>> {
+async function getAPI<TGoogleAPI>(
+	getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
+	profile: string,
+	authOptions?: AuthOptions,
+): Promise<API<TGoogleAPI>> {
 	if (!authOptions?.temporary) {
-		const writableScopes = authOptions?.scopes?.filter((scope) => !scope.endsWith('.readonly')) || [];
+		const writableScopes = authOptions?.scopes?.filter((scope) => !scope.endsWith('.readonly')) ?? [];
 
 		if (writableScopes.length > 0) {
-			warn(`WARNING: trying to create permanent credentials using non-readonly scopes (${writableScopes}). Permanent credentials will be stored in the file and potentially might be re-used to modify your data`);
+			warn(`WARNING: trying to create permanent credentials using non-readonly scopes (${writableScopes.join(', ')}). Permanent credentials will be stored in the file and potentially might be re-used to modify your data`);
 		}
 	}
 
@@ -94,5 +103,6 @@ async function getAPI<TGoogleAPI>(getter: (auth: GoogleApis.Common.OAuth2Client)
 	return instance;
 }
 
-export { getAPI };
+export { getAPI, API };
+export type { CommonResponse };
 export default { getAPI, API };

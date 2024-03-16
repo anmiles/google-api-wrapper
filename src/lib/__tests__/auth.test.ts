@@ -5,10 +5,11 @@ import profiles from '../profiles';
 import secrets from '../secrets';
 
 import auth from '../auth';
-const original = jest.requireActual('../auth').default as typeof auth;
+
+const original = jest.requireActual<{ default : typeof auth }>('../auth').default;
 jest.mock<typeof auth>('../auth', () => ({
 	login   : jest.fn(),
-	getAuth : jest.fn().mockImplementation(async () => googleAuth),
+	getAuth : jest.fn().mockImplementation(() => googleAuth),
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
@@ -22,7 +23,7 @@ jest.mock<Partial<typeof profiles>>('../profiles', () => ({
 
 jest.mock<Partial<typeof secrets>>('../secrets', () => ({
 	getSecrets     : jest.fn().mockImplementation(() => secretsObject),
-	getCredentials : jest.fn().mockImplementation(async () => credentials),
+	getCredentials : jest.fn().mockImplementation(() => credentials),
 }));
 
 jest.mock('googleapis', () => ({
@@ -44,11 +45,9 @@ const googleAuth = {
 
 const secretsObject = {
 	web : {
-		/* eslint-disable camelcase */
 		client_id     : 'client_id',
 		client_secret : 'client_secret',
 		redirect_uris : [ 'redirect_uri' ],
-		/* eslint-enable camelcase */
 	},
 };
 

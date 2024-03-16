@@ -1,9 +1,10 @@
 import fs from 'fs';
-import logger from '@anmiles/logger';
-import paths from '../paths';
+import type logger from '@anmiles/logger';
+import type paths from '../paths';
 
 import profiles from '../profiles';
-const original = jest.requireActual('../profiles').default as typeof profiles;
+
+const original = jest.requireActual<{ default : typeof profiles }>('../profiles').default;
 jest.mock<typeof profiles>('../profiles', () => ({
 	getProfiles    : jest.fn().mockImplementation(() => existingProfiles),
 	setProfiles    : jest.fn(),
@@ -15,7 +16,7 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 	mkdirSync     : jest.fn(),
 	renameSync    : jest.fn(),
 	writeFileSync : jest.fn(),
-	existsSync    : jest.fn().mockImplementation((file) => existingFiles.includes(file)),
+	existsSync    : jest.fn().mockImplementation((file: string) => existingFiles.includes(file)),
 }));
 
 jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
@@ -36,25 +37,12 @@ const allProfiles  = [ profile1, profile2 ];
 let existingProfiles: string[];
 let existingFiles: string[] = [];
 
-let getJSONSpy: jest.SpyInstance;
-let writeJSONSpy: jest.SpyInstance;
-
-beforeAll(() => {
-	getJSONSpy   = jest.spyOn(fs, 'getJSON');
-	writeJSONSpy = jest.spyOn(fs, 'writeJSON');
-});
+const getJSONSpy   = jest.spyOn(fs, 'getJSON').mockImplementation(() => json);
+const writeJSONSpy = jest.spyOn(fs, 'writeJSON').mockImplementation();
 
 beforeEach(() => {
-	getJSONSpy.mockImplementation(() => json);
-	writeJSONSpy.mockImplementation();
-
 	existingFiles    = [];
 	existingProfiles = [ 'username1', 'username2' ];
-});
-
-afterAll(() => {
-	getJSONSpy.mockRestore();
-	writeJSONSpy.mockRestore();
 });
 
 describe('src/lib/profiles', () => {
@@ -64,15 +52,15 @@ describe('src/lib/profiles', () => {
 			original.getProfiles();
 
 			expect(getJSONSpy).toHaveBeenCalled();
-			expect(getJSONSpy.mock.calls[0][0]).toEqual(profilesFile);
+			expect(getJSONSpy.mock.calls[0]?.[0]).toEqual(profilesFile);
 		});
 
 		it('should fallback to empty profiles array', () => {
 			original.getProfiles();
 
-			const fallback = getJSONSpy.mock.calls[0][1];
+			const fallback = getJSONSpy.mock.calls[0]?.[1];
 
-			expect(fallback()).toEqual([]);
+			expect(fallback?.()).toEqual([]);
 		});
 
 		it('should return JSON', () => {
@@ -92,7 +80,9 @@ describe('src/lib/profiles', () => {
 
 	describe('createProfile', () => {
 		it('should output error and do nothing if profile is falsy', () => {
-			const func = () => original.createProfile('');
+			const func = (): void => {
+				original.createProfile('');
+			};
 
 			expect(func).toThrow('Usage: `npm run create <profile>` where `profile` - is any profile name you want');
 		});
@@ -132,17 +122,17 @@ describe('src/lib/profiles', () => {
 		it('should output error if no profiles', () => {
 			existingProfiles = [];
 
-			const func = () => original.filterProfiles();
+			const func = (): string[] => original.filterProfiles();
 
-			expect(func).toThrow('Please `npm run create` at least one profile');
+			expect(func).toThrow(new Error('Please `npm run create` at least one profile'));
 		});
 
 		it('should output error if profile does not exist', () => {
 			const newProfile = 'newProfile';
 
-			const func = () => original.filterProfiles(newProfile);
+			const func = (): string[] => original.filterProfiles(newProfile);
 
-			expect(func).toThrow(`Profile '${newProfile}' does not exist`);
+			expect(func).toThrow(new Error(`Profile '${newProfile}' does not exist`));
 		});
 
 		it('should return array with requested profile if it exists', () => {

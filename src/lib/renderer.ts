@@ -2,8 +2,6 @@ import fs from 'fs';
 import renderer from './renderer';
 import { getTemplateFile } from './paths';
 
-export { templates, renderAuth, renderDone };
-
 const templates = {
 	page  : [ 'css', 'content' ] as const,
 	css   : [ ] as const,
@@ -16,9 +14,9 @@ type TemplateName = keyof typeof templates;
 
 const allHTML = {} as Record<TemplateName, string>;
 
-function renderAuth({ profile, authUrl, scope }: { profile: string, authUrl: string, scope: string[] }) {
+function renderAuth({ profile, authUrl, scope }: { profile : string; authUrl : string; scope : string[] }): string {
 	const scopesList = scope.map((s) => render('scope', {
-		name  : s.split('/').pop() as string,
+		name  : s.split('/').pop()!,
 		title : s.endsWith('.readonly') ? 'Readonly (cannot change or delete your data)' : 'Writable (can change or delete your data)',
 		type  : s.endsWith('.readonly') ? 'readonly' : '',
 	})).join('\n');
@@ -28,26 +26,26 @@ function renderAuth({ profile, authUrl, scope }: { profile: string, authUrl: str
 	return render('page', { css, content });
 }
 
-function renderDone({ profile }: { profile: string }): string {
+function renderDone({ profile }: { profile : string }): string {
 	const css     = render('css', {});
 	const content = render('done', { profile });
 	return render('page', { css, content });
 }
 
 // TODO: Use react
-function render<T extends TemplateName>(templateName: T, values: Record<typeof templates[T][number], string>): string {
+function render<T extends TemplateName>(templateName: T, values: Record<typeof templates[T][number], string | undefined>): string {
 	let html        = renderer.getTemplate(templateName);
-	const allValues = values as Record<typeof templates[TemplateName][number], string>;
+	const allValues = values as Record<typeof templates[TemplateName][number], string | undefined>;
 
 	for (const variable of templates[templateName]) {
-		const value = allValues[variable] || '';
+		const value = allValues[variable] ?? '';
 		html        = html.replace(`\${${variable}}`, value);
 	}
 
 	return html;
 }
 
-function getTemplate(templateName: TemplateName) {
+function getTemplate(templateName: TemplateName): string {
 	if (!(templateName in allHTML)) {
 		const file            = getTemplateFile(templateName);
 		const template        = fs.readFileSync(file).toString();
@@ -57,4 +55,5 @@ function getTemplate(templateName: TemplateName) {
 	return allHTML[templateName];
 }
 
+export { templates, renderAuth, renderDone };
 export default { templates, render, getTemplate, renderAuth, renderDone };

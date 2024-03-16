@@ -1,8 +1,9 @@
-import fs from 'fs';
-import path from 'path';
+import type fs from 'fs';
+import type path from 'path';
 
-import paths from '../paths';
-const original = jest.requireActual('../paths').default as typeof paths;
+import type paths from '../paths';
+
+const original = jest.requireActual<{ default : typeof paths }>('../paths').default;
 jest.mock<typeof paths>('../paths', () => ({
 	getProfilesFile    : jest.fn().mockImplementation(() => profilesFile),
 	getScopesFile      : jest.fn().mockImplementation(() => scopesFile),
@@ -18,7 +19,7 @@ jest.mock<Partial<typeof fs>>('fs', () => ({
 }));
 
 jest.mock<Partial<typeof path>>('path', () => ({
-	join : jest.fn().mockImplementation((...args) => args.join('/')),
+	join : jest.fn().mockImplementation((...args: string[]) => args.join('/')),
 }));
 
 const profile      = 'username';
