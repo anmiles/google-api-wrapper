@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [18.0.0](../../tags/v18.0.0) - 2024-03-16
+### Changed
+- Update eslint config and raise minimum supported NodeJS version to match one in typescript-eslint plugin
+- Update .npmignore
+- Unify jest.config.js by removing redundant patterns and providing support for both ts and tsx
+
 ## [17.0.9](../../tags/v17.0.9) - 2024-01-31
 ### Changed
 - Migrate to GitHub
