@@ -3,6 +3,7 @@ import renderer from './renderer';
 import { getTemplateFile } from './paths';
 
 const templates = {
+	index : [ 'page' ] as const,
 	page  : [ 'css', 'content' ] as const,
 	css   : [ ] as const,
 	auth  : [ 'profile', 'authUrl', 'scopesList' ],
@@ -23,13 +24,15 @@ function renderAuth({ profile, authUrl, scope }: { profile : string; authUrl : s
 
 	const css     = render('css', {});
 	const content = render('auth', { profile, authUrl, scopesList });
-	return render('page', { css, content });
+	const page    = render('page', { css, content });
+	return render('index', { page });
 }
 
 function renderDone({ profile }: { profile : string }): string {
 	const css     = render('css', {});
 	const content = render('done', { profile });
-	return render('page', { css, content });
+	const page    = render('page', { css, content });
+	return render('index', { page });
 }
 
 // TODO: Use react
