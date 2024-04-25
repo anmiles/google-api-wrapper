@@ -1,10 +1,10 @@
 import fs from 'fs';
 import http from 'http';
 import type path from 'path';
+import EventEmitter from 'events';
 import { open } from 'out-url';
 import type GoogleApis from 'googleapis';
 import logger from '@anmiles/logger';
-import emitter from 'event-emitter';
 import type renderer from '../renderer';
 import type paths from '../paths';
 import type { Secrets } from '../../types/secrets';
@@ -327,18 +327,16 @@ describe('src/lib/secrets', () => {
 		let endSpy: jest.SpyInstance;
 
 		beforeEach(() => {
-			server = emitter({
-				listen : jest.fn().mockImplementation(() => {
-					// always simulate opening several connections once connections are meant to be listened
-					connections.forEach((connection) => server.emit('connection', connection));
-				}),
-				close   : jest.fn(),
-				destroy : jest.fn(),
-			}) as typeof server;
+			server         = new EventEmitter() as typeof server;
+			server.listen  = jest.fn().mockImplementation(() => {
+				// always simulate opening several connections once connections are meant to be listened
+				connections.forEach((connection) => server.emit('connection', connection));
+			});
+			server.close   = jest.fn();
+			server.destroy = jest.fn();
 
-			response = emitter({
-				end : jest.fn(),
-			}) as typeof response;
+			response     = new EventEmitter() as typeof response;
+			response.end = jest.fn();
 
 			endSpy = jest.spyOn(response, 'end');
 		});
