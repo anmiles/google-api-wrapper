@@ -1,0 +1,6 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`src/lib/scopes getScopes should throw if scopes file does not exist 1`] = `
+"File scopes.json not found!
+This application had to have pre-defined file scopes.json that will declare needed scopes"
+`;

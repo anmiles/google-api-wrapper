@@ -1,149 +1,73 @@
 import { google } from 'googleapis';
 import type GoogleApis from 'googleapis';
-import logger from '@anmiles/logger';
-import profiles from '../profiles';
-import secrets from '../secrets';
 
-import auth from '../auth';
+import type { Secrets } from '../../types/secrets';
+import { getAuth } from '../auth';
+import { getCredentials } from '../credentials';
+import { getSecrets } from '../secrets';
 
-const original = jest.requireActual<{ default : typeof auth }>('../auth').default;
-jest.mock<typeof auth>('../auth', () => ({
-	login   : jest.fn(),
-	getAuth : jest.fn().mockImplementation(() => googleAuth),
-}));
-
-jest.mock<Partial<typeof logger>>('@anmiles/logger', () => ({
-	info : jest.fn(),
-	warn : jest.fn(),
-}));
-
-jest.mock<Partial<typeof profiles>>('../profiles', () => ({
-	getProfiles : jest.fn().mockImplementation(() => allProfiles),
-}));
-
-jest.mock<Partial<typeof secrets>>('../secrets', () => ({
-	getSecrets     : jest.fn().mockImplementation(() => secretsObject),
-	getCredentials : jest.fn().mockImplementation(() => credentials),
-}));
-
-jest.mock('googleapis', () => ({
-	google : {
-		auth : {
-			OAuth2 : jest.fn().mockImplementation(() => googleAuth),
-		},
-		options : jest.fn(),
-	},
-}));
+jest.mock('googleapis');
+jest.mock('@anmiles/logger');
+jest.mock('../credentials');
+jest.mock('../secrets');
 
 const profile     = 'username';
-const allProfiles = [ 'username1', 'username2' ];
-const credentials = 'credentials' as GoogleApis.Auth.Credentials;
+const credentials = 'credentials' as GoogleApis.Auth.Credentials; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 const googleAuth = {
-	setCredentials : jest.fn(),
-};
+	setCredentials: jest.fn(),
+} as unknown as GoogleApis.Common.OAuth2Client;
 
-const secretsObject = {
-	web : {
-		client_id     : 'client_id',
-		client_secret : 'client_secret',
-		redirect_uris : [ 'redirect_uri' ],
+const secrets: Secrets = {
+	web: {
+		client_id                  : 'client_id.apps.googleusercontent.com',
+		project_id                 : 'project_id',
+		auth_uri                   : 'https://accounts.google.com/o/oauth2/auth',
+		token_uri                  : 'https://oauth2.googleapis.com/token',
+		auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+		client_secret              : 'client_secret',
+		redirect_uris              : [ 'redirect_uri' ],
 	},
 };
 
+jest.mocked(getCredentials).mockResolvedValue(credentials);
+jest.mocked(getSecrets).mockReturnValue(secrets);
+jest.mocked(google.auth.OAuth2).mockReturnValue(googleAuth);
+
 describe('src/lib/auth', () => {
-	describe('login', () => {
-		it('should get profiles', async () => {
-			await original.login();
-			expect(profiles.getProfiles).toHaveBeenCalledWith();
-		});
-
-		it('should auth all profiles', async () => {
-			await original.login();
-
-			allProfiles.forEach((profile) => {
-				expect(auth.getAuth).toHaveBeenCalledWith(profile, undefined);
-			});
-		});
-
-		it('should auth only specified profile', async () => {
-			await original.login('username1');
-
-			expect(auth.getAuth).toHaveBeenCalledWith('username1', undefined);
-			expect(auth.getAuth).not.toHaveBeenCalledWith('username2', undefined);
-		});
-
-		it('should pass temporariness for all profiles', async () => {
-			await original.login(undefined, { temporary : true });
-
-			expect(auth.getAuth).toHaveBeenCalledWith('username1', { temporary : true });
-			expect(auth.getAuth).toHaveBeenCalledWith('username2', { temporary : true });
-
-		});
-
-		it('should pass temporariness only for specified profile', async () => {
-			await original.login('username1', { temporary : true });
-
-			expect(auth.getAuth).toHaveBeenCalledWith('username1', { temporary : true });
-			expect(auth.getAuth).not.toHaveBeenCalledWith('username2', { temporary : true });
-
-		});
-
-		it('should show auth progress for all profiles by default', async () => {
-			await original.login();
-
-			expect(logger.warn).toHaveBeenCalledWith('username1 - logging in...');
-			expect(logger.warn).toHaveBeenCalledWith('username2 - logging in...');
-			expect(logger.info).toHaveBeenCalledWith('username1 - logged in successfully');
-			expect(logger.info).toHaveBeenCalledWith('username2 - logged in successfully');
-		});
-
-		it('should show auth progress for specified profile by default', async () => {
-			await original.login('username1');
-
-			expect(logger.warn).toHaveBeenCalledWith('username1 - logging in...');
-			expect(logger.info).toHaveBeenCalledWith('username1 - logged in successfully');
-		});
-
-		it('should not show auth progress if hidden', async () => {
-			await original.login(undefined, { hideProgress : true });
-			await original.login('username1', { hideProgress : true });
-
-			expect(logger.info).not.toHaveBeenCalled();
-		});
-	});
-
 	describe('getAuth', () => {
 		it('should get secrets', async () => {
-			await original.getAuth(profile);
-			expect(secrets.getSecrets).toHaveBeenCalledWith(profile);
+			await getAuth(profile);
+			expect(getSecrets).toHaveBeenCalledWith(profile);
 		});
 
 		it('should get credentials', async () => {
-			await original.getAuth(profile);
-			expect(secrets.getCredentials).toHaveBeenCalledWith(profile, googleAuth, undefined);
+			await getAuth(profile);
+			expect(getCredentials).toHaveBeenCalledWith(profile, googleAuth, undefined);
 		});
 
 		it('should create OAuth2 instance', async () => {
-			await original.getAuth(profile);
-			expect(google.auth.OAuth2).toHaveBeenCalledWith(secretsObject.web.client_id, secretsObject.web.client_secret, secretsObject.web.redirect_uris[0]);
+			await getAuth(profile);
+			expect(google.auth.OAuth2).toHaveBeenCalledWith(secrets.web.client_id, secrets.web.client_secret, secrets.web.redirect_uris[0]);
 		});
 
 		it('should set credentials', async () => {
-			await original.getAuth(profile);
+			await getAuth(profile);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(googleAuth.setCredentials).toHaveBeenCalledWith(credentials);
 		});
 
 		it('should pass temporariness', async () => {
-			await original.getAuth(profile, { temporary : true });
+			await getAuth(profile, { temporary: true });
 
-			expect(secrets.getCredentials).toHaveBeenCalledWith(profile, googleAuth, { temporary : true });
+			expect(getCredentials).toHaveBeenCalledWith(profile, googleAuth, { temporary: true });
 		});
 
 		it('should set google auth', async () => {
-			await original.getAuth(profile);
+			await getAuth(profile);
 
-			expect(google.options).toHaveBeenCalledWith({ auth : googleAuth });
+			expect(google.options).toHaveBeenCalledWith({ auth: googleAuth }); // eslint-disable-line @typescript-eslint/unbound-method
 		});
 	});
 });

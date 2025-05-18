@@ -1,10 +1,8 @@
-interface CommonOptions {
-	hideProgress? : boolean;
+export interface CommonOptions {
+	hideProgress?: boolean;
 }
 
-interface AuthOptions {
-	temporary? : boolean;
-	scopes?    : string[];
+export interface AuthOptions {
+	temporary?: boolean;
+	scopes?: string[];
 }
-
-export type { CommonOptions, AuthOptions };

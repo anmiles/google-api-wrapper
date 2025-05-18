@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [19.0.0](../../tags/v19.0.0) - 2025-05-18
+__(BREAKING) Dropped support for NodeJS 18 (EOL). Minimum required version is now NodeJS 20.__
+
+### Changed
+- Migrated to NodeJS 20.19
+- Migrated to ESLint V9 flat configs
+- Updated dependencies
+
 ## [18.0.3](../../tags/v18.0.3) - 2024-04-03
 ### Changed
 - Restructuring * reorganize HTML
@@ -56,15 +64,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Do not import all existing google APIs from one module
 
 #### Before:
-```
+``` typescript
 const calendarAPI = getAPI('calendar', profile);
 ```
 #### After:
-```
+``` typescript
 import { calendar } from 'googleapis/build/src/apis/calendar';
 const calendarAPI = getAPI((auth) => calendar({ version : 'v3', auth })),
 ```
-
 
 ## [16.0.1](../../tags/v16.0.1) - 2024-01-16
 ### Changed
@@ -117,25 +124,25 @@ const calendarAPI = getAPI((auth) => calendar({ version : 'v3', auth })),
 - All existing google APIs are now available
 ### Changed
 - Single entry point for creating any APIs
-  - BEFORE:
-	```
-	import { getCalendarAPI } from '@anmiles/google-api-wrapper';
-	const calendarAPI = getCalendarAPI(profile);
-	```
-  - AFTER:
-	```
-	import { getAPI } from '@anmiles/google-api-wrapper';
-	const calendarAPI = getAPI('calendar', profile);
-	```
+	- BEFORE:
+		``` typescript
+		import { getCalendarAPI } from '@anmiles/google-api-wrapper';
+		const calendarAPI = getCalendarAPI(profile);
+		```
+	- AFTER:
+		``` typescript
+		import { getAPI } from '@anmiles/google-api-wrapper';
+		const calendarAPI = getAPI('calendar', profile);
+		```
 - Changed signature for `getItems`. Also explicit types are now redundant.
-  - BEFORE:
-	```
-	const events = await getItems<GoogleApis.calendar_v3.Schema$Event, GoogleApis.calendar_v3.Params$Resource$Events$List>(calendarAPI.events, { ...args });
-	```
-  - AFTER:
-	```
-	const events = await getItems((api) => api.events, { ...args });
-	```
+	- BEFORE:
+		``` typescript
+		const events = await getItems<GoogleApis.calendar_v3.Schema$Event, GoogleApis.calendar_v3.Params$Resource$Events$List>(calendarAPI.events, { ...args });
+		```
+	- AFTER:
+		``` typescript
+		const events = await getItems((api) => api.events, { ...args });
+		```
 - In case of `invalid_grant` error, credentials are being removed and warning shown. Will need to create new credentials.
 
 ## [9.1.0](../../tags/v9.1.0) - 2023-05-26

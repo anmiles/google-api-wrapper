@@ -1,15 +1,17 @@
-import type GoogleApis from 'googleapis';
 import { log, warn } from '@anmiles/logger';
-import sleep from '@anmiles/sleep';
-import type { AuthOptions, CommonOptions } from '../types/options';
-import { getAuth } from './auth';
-import { deleteCredentials } from './secrets';
 import '@anmiles/prototypes';
+import sleep from '@anmiles/sleep';
+import type GoogleApis from 'googleapis';
+
+import type { AuthOptions, CommonOptions } from '../types/options';
+
+import { getAuth } from './auth';
+import { deleteCredentials } from './credentials';
 
 const requestInterval = 300;
 
 type ListParams = Record<string, unknown> & {
-	pageToken : string | undefined;
+	pageToken: string | undefined;
 };
 
 interface CommonAPI<TItem> {
@@ -17,27 +19,27 @@ interface CommonAPI<TItem> {
 		(
 			params?: ListParams,
 			options?: GoogleApis.Common.MethodOptions
-		) : Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
+		): Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
 		(
-			callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void
+			callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null)=> void
 		): void;
 	};
 }
 
-interface CommonResponse<TItem> {
-	items?    : TItem[];
+export interface CommonResponse<TItem> {
+	items?: TItem[];
 	pageInfo?: {
-		totalResults? : number | null | undefined;
+		totalResults?: number | null | undefined;
 	};
-	nextPageToken? : string | null | undefined;
+	nextPageToken?: string | null | undefined;
 }
 
-class API<TGoogleAPI> {
-	api          : TGoogleAPI | undefined;
-	private auth : GoogleApis.Common.OAuth2Client | undefined;
+export class API<TGoogleAPI> {
+	api: TGoogleAPI | undefined;
+	private auth: GoogleApis.Common.OAuth2Client | undefined;
 
 	constructor(
-		private readonly getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
+		private readonly getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
 		private readonly profile: string,
 		private readonly authOptions?: AuthOptions,
 	) {	}
@@ -47,7 +49,7 @@ class API<TGoogleAPI> {
 		this.api  = this.getter(this.auth);
 	}
 
-	async getItems<TItem>(selectAPI: (api: TGoogleAPI) => CommonAPI<TItem>, params: object, options?: CommonOptions): Promise<TItem[]> {
+	async getItems<TItem>(selectAPI: (api: TGoogleAPI)=> CommonAPI<TItem>, params: object, options?: CommonOptions): Promise<TItem[]> {
 		const items: TItem[] = [];
 
 		let pageToken: string | null | undefined = undefined;
@@ -90,8 +92,8 @@ class API<TGoogleAPI> {
 	}
 }
 
-async function getAPI<TGoogleAPI>(
-	getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
+export async function getAPI<TGoogleAPI>(
+	getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
 	profile: string,
 	authOptions?: AuthOptions,
 ): Promise<API<TGoogleAPI>> {
@@ -107,7 +109,3 @@ async function getAPI<TGoogleAPI>(
 	await instance.init();
 	return instance;
 }
-
-export { getAPI, API };
-export type { CommonResponse };
-export default { getAPI, API };

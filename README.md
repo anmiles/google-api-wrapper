@@ -2,7 +2,7 @@
 
 Wrapper around googleapis for getting data shortly
 - provides quick interface for getting google API data
-- incapsulates auth process
+- encapsulates auth process
 - combines getting paged items in one call
 ----
 

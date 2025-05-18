@@ -1,0 +1,22 @@
+{
+	"version": "0.2",
+	"enabled": true,
+	"language": "en",
+	"minWordLength": 4,
+	"enableGlobDot": true,
+	"useGitignore": true,
+	"ignorePaths": [
+		".git",
+		"**/*.snap",
+		"package-lock.json"
+	],
+	"words": [
+		"anmiles",
+		"anatoliy",
+		"oblaukhov",
+		"gaxios",
+		"googleusercontent",
+		"playlistitems"
+	],
+	"flagWords": []
+}
