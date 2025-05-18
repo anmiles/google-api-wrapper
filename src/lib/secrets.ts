@@ -21,15 +21,17 @@ function checkSecrets(secretsObject: Secrets): true {
 export function getSecrets(profile: string): Secrets {
 	const secretsFile   = getSecretsFile(profile);
 	const secretsObject = fs.getJSON<Secrets>(secretsFile, () => {
-		throw new Error(getSecretsError(profile, secretsFile));
+		throw new Error(getSecretsError(secretsFile));
 	});
 	checkSecrets(secretsObject);
 	return secretsObject;
 }
 
-function getSecretsError(profile: string, secretsFile: string): string {
+function getSecretsError(secretsFile: string): string {
+	const relativePath = secretsFile.replace('\\', '/');
+
 	return [
-		`File ${secretsFile} not found!`,
+		`File ${relativePath} not found!`,
 		'Here is how to obtain it:',
 		'\tGo to https://console.cloud.google.com/projectcreate',
 		'\t\tChoose project name',
@@ -59,7 +61,7 @@ function getSecretsError(profile: string, secretsFile: string): string {
 		'\t\t\t\tSpecify app name, i.e. "NodeJS"',
 		`\t\t\t\tAdd authorized redirect URI: ${callbackURI}`,
 		'\t\t\t\tClick "CREATE"',
-		`\t\t\t\tClick "DOWNLOAD JSON" and download credentials to ./secrets/${profile}.json`,
+		`\t\t\t\tClick "DOWNLOAD JSON" and download credentials to ${relativePath}`,
 		'Then start this script again',
 	].join('\n');
 }
