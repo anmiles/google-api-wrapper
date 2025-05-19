@@ -41,7 +41,7 @@ beforeEach(() => {
 	});
 
 	generateCredentialsMock.mockResolvedValue(generatedCredentials);
-	validateCredentialsMock.mockResolvedValue({ isValid: true });
+	validateCredentialsMock.mockReturnValue({ isValid: true });
 });
 
 afterAll(() => {
@@ -99,7 +99,7 @@ describe('src/lib/credentials/index', () => {
 			});
 
 			it('should throw if saved credentials do not pass validation', async () => {
-				validateCredentialsMock.mockResolvedValueOnce({ isValid: false, validationError: 'Test error' });
+				validateCredentialsMock.mockReturnValueOnce({ isValid: false, validationError: 'Test error' });
 
 				const promise = getCredentials(profile, auth);
 
@@ -109,7 +109,7 @@ describe('src/lib/credentials/index', () => {
 
 		describe('on existing file with failed validation', () => {
 			beforeEach(() => {
-				validateCredentialsMock.mockResolvedValueOnce({ isValid: false });
+				validateCredentialsMock.mockReturnValueOnce({ isValid: false });
 			});
 
 			it('should return generated credentials', async () => {
@@ -150,7 +150,7 @@ describe('src/lib/credentials/index', () => {
 			});
 
 			it('should throw if generated credentials do not pass validation', async () => {
-				validateCredentialsMock.mockResolvedValueOnce({ isValid: false, validationError: 'Test error' });
+				validateCredentialsMock.mockReturnValueOnce({ isValid: false, validationError: 'Test error' });
 
 				const promise = getCredentials(profile, auth);
 
@@ -180,11 +180,11 @@ describe('src/lib/credentials/index', () => {
 			it('should call validation on generated credentials', async () => {
 				await getCredentials(profile, auth, { temporary: true });
 
-				expect(validateCredentialsMock).toHaveBeenCalledWith(generatedCredentials);
+				expect(validateCredentialsMock).toHaveBeenCalledWith(generatedCredentials, { temporary: true });
 			});
 
 			it('should throw if generated credentials do not pass validation', async () => {
-				validateCredentialsMock.mockResolvedValueOnce({ isValid: false, validationError: 'Test error' });
+				validateCredentialsMock.mockReturnValueOnce({ isValid: false, validationError: 'Test error' });
 
 				const promise = getCredentials(profile, auth, { temporary: true });
 

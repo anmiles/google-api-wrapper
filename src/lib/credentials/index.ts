@@ -13,7 +13,7 @@ export async function getCredentials(profile: string, auth: GoogleApis.Common.OA
 
 	if (options?.temporary) {
 		const credentials      = await generateCredentials(profile, auth, options);
-		const validationResult = await validateCredentials(credentials);
+		const validationResult = validateCredentials(credentials, options);
 
 		if (!validationResult.isValid) {
 			throw new Error(validationResult.validationError);
@@ -37,7 +37,8 @@ export async function getCredentials(profile: string, auth: GoogleApis.Common.OA
 			refresh_token: refreshToken,
 			...credentials,
 		};
-	}, validateCredentials);
+	// eslint-disable-next-line @typescript-eslint/require-await
+	}, async (credentials) => validateCredentials(credentials));
 }
 
 export function deleteCredentials(profile: string): void {
