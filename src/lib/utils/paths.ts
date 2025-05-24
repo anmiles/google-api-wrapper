@@ -6,7 +6,7 @@ const dirPaths = {
 	input    : 'input',
 	secrets  : 'secrets',
 	// TODO: Remove this hack after moving to React
-	templates: path.relative(process.cwd(), path.join(__dirname, '../../templates')),
+	templates: path.join(__dirname, '../../templates'),
 };
 
 export function getProfilesFile(): string {
