@@ -35,18 +35,21 @@ export interface CommonResponse<TItem> {
 }
 
 export class API<TGoogleAPI> {
-	api: TGoogleAPI | undefined;
-	private auth: GoogleApis.Common.OAuth2Client | undefined;
-
-	constructor(
+	private constructor(
+		public api: TGoogleAPI,
+		private auth: GoogleApis.Common.OAuth2Client,
 		private readonly getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
 		private readonly profile: string,
 		private readonly authOptions?: AuthOptions,
 	) {	}
 
-	async init(): Promise<void> {
-		this.auth = await getAuth(this.profile, this.authOptions);
-		this.api  = this.getter(this.auth);
+	static async init<TGoogleAPI>(
+		getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
+		profile: string,
+		authOptions?: AuthOptions,
+	): Promise<API<TGoogleAPI>> {
+		const { api, auth } = await resetAuth(getter, profile, authOptions);
+		return new API<TGoogleAPI>(api, auth, getter, profile, authOptions);
 	}
 
 	async getItems<TItem>(selectAPI: (api: TGoogleAPI)=> CommonAPI<TItem>, params: object, options?: CommonOptions): Promise<TItem[]> {
@@ -58,10 +61,6 @@ export class API<TGoogleAPI> {
 			let response: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>;
 
 			try {
-				if (!this.api) {
-					throw new Error('API is not initialized. Call `init` before getting items.');
-				}
-
 				const selectedAPI = selectAPI(this.api);
 
 				response = await selectedAPI.list({ ...params, pageToken });
@@ -71,7 +70,9 @@ export class API<TGoogleAPI> {
 				if ((message === 'invalid_grant' || message === 'Invalid credentials') && !this.authOptions?.temporary) {
 					warn('Access token stored is invalid, re-creating...');
 					deleteCredentials(this.profile);
-					await this.init();
+					const { api, auth } = await resetAuth(this.getter, this.profile, this.authOptions);
+					this.api            = api;
+					this.auth           = auth;
 					return this.getItems(selectAPI, params, options);
 				} else {
 					throw ex;
@@ -105,7 +106,18 @@ export async function getAPI<TGoogleAPI>(
 		}
 	}
 
-	const instance = new API<TGoogleAPI>(getter, profile, authOptions);
-	await instance.init();
-	return instance;
+	return API.init<TGoogleAPI>(getter, profile, authOptions);
+}
+
+async function resetAuth<TGoogleAPI>(
+	getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
+	profile: string,
+	authOptions?: AuthOptions,
+): Promise<{
+		api: TGoogleAPI;
+		readonly auth: GoogleApis.Common.OAuth2Client;
+	}> {
+	const auth = await getAuth(profile, authOptions);
+	const api  = getter(auth);
+	return { api, auth };
 }

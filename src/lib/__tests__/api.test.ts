@@ -4,8 +4,8 @@ import type GoogleApis from 'googleapis';
 import type { calendar_v3 } from 'googleapis/build/src/apis/calendar';
 import { calendar } from 'googleapis/build/src/apis/calendar';
 
-import { API,  getAPI } from '../api';
-import type { CommonResponse } from '../api';
+import { getAPI } from '../api';
+import type { API, CommonResponse } from '../api';
 import { getAuth } from '../auth';
 import { deleteCredentials } from '../credentials';
 
@@ -210,13 +210,6 @@ Permanent credentials will be stored in the file and potentially might be re-use
 				const returnedItems = await instance.getItems(() => calendarList, params);
 
 				expect(returnedItems).toEqual(items);
-			});
-
-			it('should throw if api was not initialized before getting items', async () => {
-				instance = new API((auth) => calendar({ version: 'v3', auth }), profile);
-
-				await expect(async () => instance.getItems(() => calendarList, params))
-					.rejects.toEqual(new Error('API is not initialized. Call `init` before getting items.'));
 			});
 		});
 	});
