@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`src/lib/scopes getScopes should throw if scopes file does not exist 1`] = `
 "File scopes.json not found!

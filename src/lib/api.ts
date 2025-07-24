@@ -114,9 +114,9 @@ async function resetAuth<TGoogleAPI>(
 	profile: string,
 	authOptions?: AuthOptions,
 ): Promise<{
-		api: TGoogleAPI;
-		readonly auth: GoogleApis.Common.OAuth2Client;
-	}> {
+	api: TGoogleAPI;
+	readonly auth: GoogleApis.Common.OAuth2Client;
+}> {
 	const auth = await getAuth(profile, authOptions);
 	const api  = getter(auth);
 	return { api, auth };

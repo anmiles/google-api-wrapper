@@ -65,3 +65,4 @@ getProfiles().map(async (profile) => {
 ### Live examples
 - [youtube-likes-downloader](https://www.npmjs.com/package/youtube-likes-downloader) - download all liked videos from youtube
 - [google-calendar-entries](https://www.npmjs.com/package/google-calendar-entries) - view and manage google calendar entries
+- [school-schedule-sync](https://www.npmjs.com/package/school-schedule-sync) - synchronization between JSON schedule and Google Calendar
