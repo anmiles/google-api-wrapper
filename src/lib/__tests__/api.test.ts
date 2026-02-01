@@ -1,7 +1,6 @@
 import logger from '@anmiles/logger';
 import sleep from '@anmiles/sleep';
 import type GoogleApis from 'googleapis';
-import type { calendar_v3 } from 'googleapis/build/src/apis/calendar';
 import { calendar } from 'googleapis/build/src/apis/calendar';
 
 import { getAPI } from '../api';
@@ -79,7 +78,7 @@ const scopes = [ 'scope1', 'scope2' ];
 const getListException = jest.mocked(jest.fn());
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-jest.mocked(calendar).mockImplementation(() => calendarApis as unknown as GoogleApis.calendar_v3.Calendar);
+jest.mocked(calendar).mockReturnValue(calendarApis as unknown as GoogleApis.calendar_v3.Calendar);
 jest.mocked(getAuth).mockResolvedValue(googleAuth);
 
 beforeEach(() => {
@@ -122,7 +121,7 @@ Permanent credentials will be stored in the file and potentially might be re-use
 	});
 
 	describe('API', () => {
-		let instance: InstanceType<typeof API<calendar_v3.Calendar>>;
+		let instance: API<GoogleApis.calendar_v3.Calendar>;
 
 		beforeEach(async () => {
 			instance = await getAPI((auth) => calendar({ version: 'v3', auth }), profile);

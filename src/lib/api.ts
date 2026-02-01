@@ -21,7 +21,7 @@ interface CommonAPI<TItem> {
 			options?: GoogleApis.Common.MethodOptions
 		): Promise<GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>>>;
 		(
-			callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null)=> void
+			callback: (err: Error | null, res?: GoogleApis.Common.GaxiosResponse<CommonResponse<TItem>> | null) => void
 		): void;
 	};
 }
@@ -38,13 +38,13 @@ export class API<TGoogleAPI> {
 	private constructor(
 		public api: TGoogleAPI,
 		private auth: GoogleApis.Common.OAuth2Client,
-		private readonly getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
+		private readonly getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
 		private readonly profile: string,
 		private readonly authOptions?: AuthOptions,
 	) {	}
 
 	static async init<TGoogleAPI>(
-		getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
+		getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
 		profile: string,
 		authOptions?: AuthOptions,
 	): Promise<API<TGoogleAPI>> {
@@ -52,7 +52,7 @@ export class API<TGoogleAPI> {
 		return new API<TGoogleAPI>(api, auth, getter, profile, authOptions);
 	}
 
-	async getItems<TItem>(selectAPI: (api: TGoogleAPI)=> CommonAPI<TItem>, params: object, options?: CommonOptions): Promise<TItem[]> {
+	async getItems<TItem>(selectAPI: (api: TGoogleAPI) => CommonAPI<TItem>, params: object, options?: CommonOptions): Promise<TItem[]> {
 		const items: TItem[] = [];
 
 		let pageToken: string | null | undefined = undefined;
@@ -71,8 +71,9 @@ export class API<TGoogleAPI> {
 					warn('Access token stored is invalid, re-creating...');
 					deleteCredentials(this.profile);
 					const { api, auth } = await resetAuth(this.getter, this.profile, this.authOptions);
-					this.api            = api;
-					this.auth           = auth;
+
+					this.api  = api;
+					this.auth = auth;
 					return this.getItems(selectAPI, params, options);
 				} else {
 					throw ex;
@@ -94,7 +95,7 @@ export class API<TGoogleAPI> {
 }
 
 export async function getAPI<TGoogleAPI>(
-	getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
+	getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
 	profile: string,
 	authOptions?: AuthOptions,
 ): Promise<API<TGoogleAPI>> {
@@ -110,7 +111,7 @@ export async function getAPI<TGoogleAPI>(
 }
 
 async function resetAuth<TGoogleAPI>(
-	getter: (auth: GoogleApis.Common.OAuth2Client)=> TGoogleAPI,
+	getter: (auth: GoogleApis.Common.OAuth2Client) => TGoogleAPI,
 	profile: string,
 	authOptions?: AuthOptions,
 ): Promise<{

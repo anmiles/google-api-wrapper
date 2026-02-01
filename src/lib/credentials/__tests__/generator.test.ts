@@ -64,7 +64,7 @@ jest.mocked(renderAuth).mockImplementation((
 	{ profile, authUrl, scope }: { profile: string; authUrl: string; scope: string[] },
 ) => `content = profile = ${profile} authUrl = ${authUrl} scope = ${scope.join('|')}`);
 
-jest.mocked(renderDone).mockImplementation(() => 'content = done');
+jest.mocked(renderDone).mockReturnValue('content = done');
 
 jest.mocked(getScopes).mockReturnValue([ 'scope1', 'scope2' ]);
 
