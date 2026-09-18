@@ -195,19 +195,25 @@ describe('src/lib/credentials/index', () => {
 
 	describe('deleteCredentials', () => {
 		it('should delete credentials file if exists', () => {
+			const rmSyncSpy = jest.spyOn(fs, 'rmSync');
+
 			expect(fs.existsSync(credentialsFile)).toEqual(true);
 
 			deleteCredentials(profile);
 
-			expect(fs.existsSync(credentialsFile)).toEqual(false);
+			expect(rmSyncSpy).toHaveBeenCalledWith(credentialsFile);
 		});
 
 		it('should do nothing if credentials file does not exist', () => {
 			mockFs({});
 
-			deleteCredentials(profile);
+			const rmSyncSpy = jest.spyOn(fs, 'rmSync');
 
 			expect(fs.existsSync(credentialsFile)).toEqual(false);
+
+			deleteCredentials(profile);
+
+			expect(rmSyncSpy).not.toHaveBeenCalledWith(credentialsFile);
 		});
 	});
 });
